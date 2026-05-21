@@ -66,11 +66,19 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Nom du contact</label>
-                    <input type="text" id="nomContact" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <input type="text" id="nomContact" placeholder="Robert" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Prénom du contact</label>
-                    <input type="text" id="prenomContact" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <input type="text" id="prenomContact" placeholder="Daniel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Téléphone</label>
+                    <input type="tel" id="telContact" placeholder="06 12 34 56 78" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">E-mail</label>
+                    <input type="email" id="emailContact" placeholder="contact@exemple.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
                 </div>
                 <div class="md:col-span-2 flex gap-2">
                     <button type="submit" id="submitBtn" class="flex-1 bg-[#2c4c5e] text-white text-sm font-medium py-3 rounded-lg cursor-pointer">Ajouter l'annonce</button>
@@ -140,9 +148,8 @@
                 const response = await fetch(`${FIREBASE_URL}/biens.json`);
                 const data = await response.json();
                 
-                // Si la base en ligne est neuve ou vide (null), on injecte le bien de démo initial
                 if (!data || data.length === 0) {
-                    listeBiens = [{ id: 1716284000000, nom: "Villa mystique", lien: "https://example.com/annonce1", gps: "43.556515, 7.020088", type: "Maison", surface: "580", pieces: "18", prix: "5 900 000", contactNom: "Robert", contactPrenom: "Daniel", statut: "Inactifs", dateAjout: "21/05/2026", prospectionFaite: false, mandatSigne: false }];
+                    listeBiens = [{ id: 1716284000000, nom: "Villa mystique", lien: "https://example.com/annonce1", gps: "43.556515, 7.020088", type: "Maison", surface: "580", pieces: "18", prix: "5 900 000", contactNom: "Robert", contactPrenom: "Daniel", tel: "", email: "", statut: "Inactifs", dateAjout: "21/05/2026", prospectionFaite: false, mandatSigne: false }];
                     await uploadToCloud();
                 } else {
                     listeBiens = data;
@@ -169,6 +176,8 @@
                     if (prixRaw) listeBiens[idx].prix = formatPrix;
                     listeBiens[idx].contactNom = document.getElementById('nomContact').value || 'Non renseigné';
                     listeBiens[idx].contactPrenom = document.getElementById('prenomContact').value || '';
+                    listeBiens[idx].tel = document.getElementById('telContact').value || '';
+                    listeBiens[idx].email = document.getElementById('emailContact').value || '';
                 }
                 resetFormMode();
             } else {
@@ -183,10 +192,11 @@
                     prix: formatPrix,
                     contactNom: document.getElementById('nomContact').value || 'Non renseigné',
                     contactPrenom: document.getElementById('prenomContact').value || '',
+                    tel: document.getElementById('telContact').value || '',
+                    email: document.getElementById('emailContact').value || '',
                     statut: "Inactifs",
                     dateAjout: new Date().toLocaleDateString('fr-FR'),
                     prospectionFaite: false,
-                    fancyPieces: document.getElementById('pieces').value || '—',
                     mandatSigne: false
                 };
                 listeBiens.unshift(nouveauBien);
@@ -209,6 +219,8 @@
             document.getElementById('prix').value = bien.prix === '—' ? '' : bien.prix.replace(/\s/g, '');
             document.getElementById('nomContact').value = bien.contactNom === 'Non renseigné' ? '' : bien.contactNom;
             document.getElementById('prenomContact').value = bien.contactPrenom;
+            document.getElementById('telContact').value = bien.tel || '';
+            document.getElementById('emailContact').value = bien.email || '';
 
             formTitle.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-amber-500"></i> Modifier la fiche : ${bien.nom}`;
             submitBtn.innerText = "Enregistrer les modifications";
@@ -231,8 +243,24 @@
         async function toggleActifInactif(id) {
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
+            
+            // Bascule stricte entre Actifs et Inactifs sans interférer avec "FAIT / À FAIRE"
             bien.statut = (bien.statut === "Actifs") ? "Inactifs" : "Actifs";
-            if (bien.statut === "Actifs") { bien.prospectionFaite = false; bien.mandatSigne = false; }
+            
+            // Si on repasse le bien en Actif/Inactif, on décoche le mandat pour rester cohérent
+            if (bien.statut !== "Mandats") bien.mandatSigne = false;
+
+            await uploadToCloud();
+            renderApp();
+        }
+
+        // LE BOUTON DE PROSPECTION DIRECTE DEVIENT COMPLÈTEMENT INDÉPENDANT
+        async function toggleProspectionDirecte(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+            
+            bien.prospectionFaite = !bien.prospectionFaite;
+
             await uploadToCloud();
             renderApp();
         }
@@ -240,22 +268,16 @@
         async function updateBienCheckboxes(id) {
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
-            bien.prospectionFaite = document.getElementById(`prosp-${id}`).checked;
             bien.mandatSigne = document.getElementById(`mandat-${id}`).checked;
-            bien.statut = bien.mandatSigne ? "Mandats" : (bien.prospectionFaite ? "Prospectés" : "Inactifs");
+            
+            if (bien.mandatSigne) {
+                bien.statut = "Mandats";
+            } else {
+                bien.statut = "Inactifs"; // Statut par défaut si le mandat est retiré
+            }
 
             await uploadToCloud();
-            renderCountersAndTabs();
-            
-            const badge = document.getElementById(`badge-${id}`);
-            if(badge) {
-                let bc = "bg-rose-50 text-rose-600 border border-rose-200";
-                if (bien.statut === "Prospectés") bc = "bg-amber-50 text-amber-600 border border-amber-200";
-                if (bien.statut === "Mandats") bc = "bg-indigo-50 text-indigo-600 border border-indigo-200";
-                if (bien.statut === "Actifs") bc = "bg-emerald-50 text-emerald-600 border border-emerald-200";
-                badge.className = `text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer ${bc}`;
-                badge.innerText = `X ${bien.statut.slice(0, -1)}`;
-            }
+            renderApp();
         }
 
         function toggleCollapse(id) { openCards[id] = !openCards[id]; sessionStorage.setItem('openCards', JSON.stringify(openCards)); renderApp(); }
@@ -272,6 +294,8 @@
             
             listeBiens.forEach(b => { 
                 if(cs[b.statut] !== undefined) cs[b.statut]++; 
+                // Le compteur de l'onglet "Prospectés" calcule maintenant tous les biens marqués comme FAIT
+                if(b.prospectionFaite) cs.Prospectés++;
                 if(ct[b.type] !== undefined) ct[b.type]++; 
             });
 
@@ -301,18 +325,29 @@
             renderCountersAndTabs();
             annoncesContainer.innerHTML = '';
             
-            const bf = listeBiens.filter(b => (filtreStatutActuel === "Tous" || b.statut === filtreStatutActuel) && (filtreTypeActuel === "Tous" || b.type === filtreTypeActuel));
+            const bf = listeBiens.filter(b => {
+                const matchStatut = (filtreStatutActuel === "Tous") || 
+                                    (filtreStatutActuel === "Prospectés" && b.prospectionFaite) || 
+                                    (b.statut === filtreStatutActuel);
+                const matchType = (filtreTypeActuel === "Tous" || b.type === filtreTypeActuel);
+                return matchStatut && matchType;
+            });
 
             if(bf.length === 0) {
-                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien trouvé.</div>`;
+                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien ne correspond à vos critères combinés.</div>`;
                 return;
             }
 
             bf.forEach(bien => {
                 let bc = "bg-rose-50 text-rose-600 border border-rose-200";
-                if (bien.statut === "Prospectés") bc = "bg-amber-50 text-amber-600 border border-amber-200";
                 if (bien.statut === "Mandats") bc = "bg-indigo-50 text-indigo-600 border border-indigo-200";
                 if (bien.statut === "Actifs") bc = "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                
+                let prospClass = bien.prospectionFaite 
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
+                    : "bg-rose-50 text-rose-600 border border-rose-200";
+                let prospText = bien.prospectionFaite ? "✅ FAIT" : "❌ À FAIRE";
+
                 const isExpanded = !!openCards[bien.id];
 
                 const card = document.createElement('div');
@@ -330,20 +365,22 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button id="badge-${bien.id}" onclick="toggleActifInactif(${bien.id})" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${bc}">X ${bien.statut.slice(0, -1)}</button>
+                            <button onclick="toggleProspectionDirecte(${bien.id})" title="Changer l'état de prospection" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${prospClass}">
+                                ${prospText}
+                            </button>
+                            <button id="badge-${bien.id}" onclick="toggleActifInactif(${bien.id})" title="Cliquez pour changer la disponibilité" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${bc}">X ${bien.statut.slice(0, -1)}</button>
                             <button onclick="toggleCollapse(${bien.id})" class="text-gray-400 cursor-pointer"><i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5"></i></button>
                         </div>
                     </div>
                     <div class="${isExpanded ? 'block' : 'hidden'} p-5 space-y-4 bg-gray-50/50 border-t">
-                        <div class="bg-white border rounded-xl p-4 max-w-md shadow-2xs">
-                            <div class="text-xs font-semibold text-slate-500 mb-1">Contact associé</div>
+                        <div class="bg-white border rounded-xl p-4 max-w-md shadow-2xs space-y-2">
+                            <div class="text-xs font-semibold text-slate-500 flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> Contact associé</div>
                             <div class="text-sm font-bold text-gray-800">${bien.contactPrenom} ${bien.contactNom}</div>
-                            <button onclick="editContact(${bien.id})" class="mt-3 text-xs bg-indigo-50 text-indigo-600 font-semibold px-3 py-1.5 rounded-md border border-indigo-200 cursor-pointer hover:bg-indigo-100">✏️ Modifier la fiche / contact</button>
+                            ${bien.tel ? `<div class="text-xs text-slate-600 flex items-center gap-1.5">📱 <strong>Tél:</strong> <a href="tel:${bien.tel}" class="text-sky-600 hover:underline">${bien.tel}</a></div>` : ''}
+                            ${bien.email ? `<div class="text-xs text-slate-600 flex items-center gap-1.5">✉️ <strong>Email:</strong> <a href="mailto:${bien.email}" class="text-sky-600 hover:underline">${bien.email}</a></div>` : ''}
+                            <button onclick="editContact(${bien.id})" class="mt-2 text-xs bg-indigo-50 text-indigo-600 font-semibold px-3 py-1.5 rounded-md border border-indigo-200 cursor-pointer hover:bg-indigo-100 flex items-center gap-1">✏️ Modifier la fiche / contact</button>
                         </div>
                         <div class="bg-white border rounded-xl p-4 flex flex-wrap gap-6 items-center shadow-2xs">
-                            <label class="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
-                                <input type="checkbox" id="prosp-${bien.id}" ${bien.prospectionFaite ? 'checked' : ''} onchange="updateBienCheckboxes(${bien.id})" class="w-4 h-4 text-indigo-600 rounded border-gray-300"> 📋 Prospection réalisée
-                            </label>
                             <label class="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
                                 <input type="checkbox" id="mandat-${bien.id}" ${bien.mandatSigne ? 'checked' : ''} onchange="updateBienCheckboxes(${bien.id})" class="w-4 h-4 text-indigo-600 rounded border-gray-300"> 📝 Mandat signé
                             </label>
