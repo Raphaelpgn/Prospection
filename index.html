@@ -80,11 +80,19 @@
                     <label class="block text-xs font-medium text-gray-500 mb-1">E-mail</label>
                     <input type="email" id="emailContact" placeholder="contact@exemple.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
                 </div>
-                <div class="md:col-span-2 flex gap-2">
+                <div class="md:col-span-2 flex gap-2 pt-2 border-t border-gray-100">
                     <button type="submit" id="submitBtn" class="flex-1 bg-[#2c4c5e] text-white text-sm font-medium py-3 rounded-lg cursor-pointer">Ajouter l'annonce</button>
                     <button type="button" id="cancelEditBtn" class="hidden bg-gray-300 text-gray-700 text-sm py-3 px-6 rounded-lg">Annuler</button>
                 </div>
             </form>
+
+            <div class="mt-6 pt-6 border-t border-dashed border-gray-200 bg-slate-50 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">📥 Importer l'historique Google Sheets</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Glisse ton fichier au format .csv pour injecter directement toutes tes recherches.</p>
+                </div>
+                <input type="file" id="csvFileInput" accept=".csv" class="text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+            </div>
         </section>
 
         <section class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
@@ -124,10 +132,12 @@
     <script>
         const FIREBASE_URL = "https://site-prospection-2cb49-default-rtdb.europe-west1.firebasedatabase.app";
 
+        // CONFIGURATION GLOBALE
         let listeBiens = [];
         let filtreStatutActuel = "Tous";
         let filtreTypeActuel = "Tous";
         let openCards = JSON.parse(sessionStorage.getItem('openCards')) || {};
+        let isSyncPaused = false; // VARIABLE DE DISPONIBILITÉ EN VARIABLE GLOBALE DESORMAIS
 
         const form = document.getElementById('annonceForm');
         const annoncesContainer = document.getElementById('annoncesList');
@@ -135,6 +145,7 @@
         const submitBtn = document.getElementById('submitBtn');
         const cancelEditBtn = document.getElementById('cancelEditBtn');
         const editIdInput = document.getElementById('editId');
+        const csvFileInput = document.getElementById('csvFileInput');
 
         async function uploadToCloud() {
             await fetch(`${FIREBASE_URL}/biens.json`, {
@@ -144,11 +155,13 @@
         }
 
         async function fetchFromCloud() {
+            if (isSyncPaused) return; // Sécurité maximale : empêche d'écraser la liste pendant le traitement
             try {
                 const response = await fetch(`${FIREBASE_URL}/biens.json`);
                 const data = await response.json();
                 
-                if (!data || data.length === 0) {
+                // Si la base distante est vide ou incohérente, on initie la Villa
+                if (!data || data.length === 0 || (data.length > 1 && data.some(b => b.nom && b.nom.includes("Autre")))) {
                     listeBiens = [{ id: 1716284000000, nom: "Villa mystique", lien: "https://example.com/annonce1", gps: "43.556515, 7.020088", type: "Maison", surface: "580", pieces: "18", prix: "5 900 000", contactNom: "Robert", contactPrenom: "Daniel", tel: "", email: "", statut: "Inactifs", dateAjout: "21/05/2026", prospectionFaite: false, mandatSigne: false }];
                     await uploadToCloud();
                 } else {
@@ -163,12 +176,16 @@
             const idValue = editIdInput.value;
             const prixRaw = document.getElementById('prix').value;
             const formatPrix = prixRaw ? Number(prixRaw).toLocaleString('fr-FR') : '—';
+            let inputLien = (document.getElementById('lienAnnonce').value || '').trim();
+            if (inputLien && !inputLien.startsWith('http://') && !inputLien.startsWith('https://')) {
+                inputLien = 'https://' + inputLien;
+            }
 
             if (idValue) {
                 const idx = listeBiens.findIndex(b => b.id == idValue);
                 if (idx !== -1) {
                     listeBiens[idx].nom = document.getElementById('nomBien').value || 'Sans nom';
-                    listeBiens[idx].lien = document.getElementById('lienAnnonce').value || '';
+                    listeBiens[idx].lien = inputLien;
                     listeBiens[idx].gps = document.getElementById('gps').value || '';
                     listeBiens[idx].type = document.getElementById('typeBien').value;
                     listeBiens[idx].surface = document.getElementById('surface').value || '—';
@@ -184,7 +201,7 @@
                 const nouveauBien = {
                     id: Date.now(),
                     nom: document.getElementById('nomBien').value || 'Sans nom',
-                    lien: document.getElementById('lienAnnonce').value || '',
+                    lien: inputLien,
                     gps: document.getElementById('gps').value || '',
                     type: document.getElementById('typeBien').value,
                     surface: document.getElementById('surface').value || '—',
@@ -206,11 +223,149 @@
             renderApp();
         });
 
+        function parseCSVLine(line, separator) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === separator && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result.map(cell => cell.replace(/^["']|["']$/g, '').trim());
+        }
+
+        csvFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                const text = evt.target.result;
+                const lines = text.split(/\r?\n/);
+                if (lines.length < 2) { alert("Le fichier semble vide."); return; }
+
+                // VERROUILLAGE FORCE DE LA SYNCHRONISATION
+                isSyncPaused = true; 
+
+                const separator = lines[0].includes(';') ? ';' : ',';
+                const firstLine = lines[0].replace(/^\uFEFF/, '').trim();
+                const headers = parseCSVLine(firstLine, separator);
+                
+                let countImported = 0;
+                let compteurType = { Maison: 0, Appartement: 0, Terrain: 0, Autre: 0 };
+
+                // On vide l'ancienne base pour ne garder que la Villa d'origine
+                listeBiens = [{ id: 1716284000000, nom: "Villa mystique", lien: "https://example.com/annonce1", gps: "43.556515, 7.020088", type: "Maison", surface: "580", pieces: "18", prix: "5 900 000", contactNom: "Robert", contactPrenom: "Daniel", tel: "", email: "", statut: "Inactifs", dateAjout: "21/05/2026", prospectionFaite: false, mandatSigne: false }];
+                listeBiens.forEach(b => { if(compteurType[b.type] !== undefined) compteurType[b.type]++; });
+                
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    
+                    const columns = parseCSVLine(lines[i], separator);
+                    if (columns.length === 0 || columns.every(c => c === '')) continue;
+
+                    let bienObj = {
+                        id: Date.now() + i,
+                        nom: '', lien: '', gps: '', type: 'Maison', 
+                        surface: '—', pieces: '—', prix: '—', 
+                        contactNom: 'Non renseigné', contactPrenom: '', tel: '', email: '',
+                        statut: "Inactifs", dateAjout: new Date().toLocaleDateString('fr-FR'),
+                        prospectionFaite: false, mandatSigne: false
+                    };
+
+                    headers.forEach((header, idx) => {
+                        let val = columns[idx];
+                        if (val !== undefined && val !== null && val !== '') {
+                            let normHeader = header.toLowerCase().replace(/\s/g, '');
+                            
+                            if (normHeader === 'annonce' || normHeader.includes('lien') || normHeader.includes('url')) {
+                                let rawUrl = val.trim();
+                                if (rawUrl && !rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+                                    rawUrl = 'https://' + rawUrl;
+                                }
+                                bienObj.lien = rawUrl;
+                            }
+                            if (normHeader.includes('gps')) bienObj.gps = val;
+                            if (normHeader.includes('date')) bienObj.dateAjout = val;
+                            
+                            if (normHeader.includes('type')) {
+                                let vLower = val.toLowerCase();
+                                if(vLower.includes('maison') || vLower.includes('villa')) bienObj.type = 'Maison';
+                                else if(vLower.includes('appart') || vLower.includes('studio')) bienObj.type = 'Appartement';
+                                else if(vLower.includes('terrain')) bienObj.type = 'Terrain';
+                                else bienObj.type = 'Autre';
+                            }
+                            
+                            if (normHeader === 'm²' || normHeader.includes('surface')) bienObj.surface = val;
+                            if (normHeader.includes('pièce')) bienObj.pieces = val;
+                            if (normHeader === 'prix') {
+                                let num = Number(val.replace(/\s/g, '').replace('€', '').replace(' ', ''));
+                                bienObj.prix = !isNaN(num) && num > 0 ? num.toLocaleString('fr-FR') : val;
+                            }
+                            if (normHeader.includes('téléphone') || normHeader === 'tel') bienObj.tel = val;
+                            if (normHeader.includes('mail')) bienObj.email = val;
+                            
+                            if (normHeader.includes('prospect') && (val.toLowerCase().includes('oui') || val.toLowerCase().includes('fait') || val === '1')) {
+                                bienObj.prospectionFaite = true;
+                            }
+                            if (normHeader.includes('mandat') && (val.toLowerCase().includes('oui') || val.toLowerCase().includes('sign') || val === '1')) {
+                                bienObj.mandatSigne = true;
+                                bienObj.statut = "Mandats";
+                            }
+                            if (normHeader.includes('nompr')) {
+                                let espaceIdx = val.indexOf(' ');
+                                if (espaceIdx !== -1) {
+                                    bienObj.contactPrenom = val.substring(0, espaceIdx);
+                                    bienObj.contactNom = val.substring(espaceIdx + 1);
+                                } else {
+                                    bienObj.contactNom = val;
+                                }
+                            }
+                        }
+                    });
+
+                    compteurType[bienObj.type]++;
+                    bienObj.nom = `${bienObj.type} ${compteurType[bienObj.type]}`;
+
+                    listeBiens.push(bienObj);
+                    countImported++;
+                }
+
+                if (countImported > 0) {
+                    renderApp(); // Force l'affichage immédiat complet à l'écran
+                    
+                    // On attend que l'envoi HTTP soit totalement validé par Firebase avant de libérer le verrou
+                    await uploadToCloud(); 
+                    
+                    // Sécurité additionnelle : on maintient la pause 8 secondes pour laisser Firebase indexer
+                    setTimeout(() => {
+                        isSyncPaused = false;
+                    }, 8000);
+                    
+                    alert(`Succès ! ${countImported} fiches ont été proprement importées et synchronisées.`);
+                    csvFileInput.value = "";
+                } else {
+                    isSyncPaused = false;
+                    alert("Erreur de lecture.");
+                }
+            };
+            reader.readAsText(file);
+        });
+
         function editContact(id) {
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
             editIdInput.value = bien.id;
-            document.getElementById('nomBien').value = bien.nom === 'Sans nom' ? '' : bien.nom;
+            document.getElementById('nomBien').value = bien.nom;
             document.getElementById('lienAnnonce').value = bien.lien;
             document.getElementById('gps').value = bien.gps;
             document.getElementById('typeBien').value = bien.type;
@@ -243,24 +398,16 @@
         async function toggleActifInactif(id) {
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
-            
-            // Bascule stricte entre Actifs et Inactifs sans interférer avec "FAIT / À FAIRE"
             bien.statut = (bien.statut === "Actifs") ? "Inactifs" : "Actifs";
-            
-            // Si on repasse le bien en Actif/Inactif, on décoche le mandat pour rester cohérent
             if (bien.statut !== "Mandats") bien.mandatSigne = false;
-
             await uploadToCloud();
             renderApp();
         }
 
-        // LE BOUTON DE PROSPECTION DIRECTE DEVIENT COMPLÈTEMENT INDÉPENDANT
         async function toggleProspectionDirecte(id) {
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
-            
             bien.prospectionFaite = !bien.prospectionFaite;
-
             await uploadToCloud();
             renderApp();
         }
@@ -269,13 +416,7 @@
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
             bien.mandatSigne = document.getElementById(`mandat-${id}`).checked;
-            
-            if (bien.mandatSigne) {
-                bien.statut = "Mandats";
-            } else {
-                bien.statut = "Inactifs"; // Statut par défaut si le mandat est retiré
-            }
-
+            bien.statut = bien.mandatSigne ? "Mandats" : "Inactifs";
             await uploadToCloud();
             renderApp();
         }
@@ -294,7 +435,6 @@
             
             listeBiens.forEach(b => { 
                 if(cs[b.statut] !== undefined) cs[b.statut]++; 
-                // Le compteur de l'onglet "Prospectés" calcule maintenant tous les biens marqués comme FAIT
                 if(b.prospectionFaite) cs.Prospectés++;
                 if(ct[b.type] !== undefined) ct[b.type]++; 
             });
@@ -343,13 +483,10 @@
                 if (bien.statut === "Mandats") bc = "bg-indigo-50 text-indigo-600 border border-indigo-200";
                 if (bien.statut === "Actifs") bc = "bg-emerald-50 text-emerald-600 border border-emerald-200";
                 
-                let prospClass = bien.prospectionFaite 
-                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
-                    : "bg-rose-50 text-rose-600 border border-rose-200";
+                let prospClass = bien.prospectionFaite ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-rose-50 text-rose-600 border border-rose-200";
                 let prospText = bien.prospectionFaite ? "✅ FAIT" : "❌ À FAIRE";
 
                 const isExpanded = !!openCards[bien.id];
-
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden";
                 card.innerHTML = `
@@ -357,7 +494,7 @@
                         <div class="cursor-pointer flex-1" onclick="toggleCollapse(${bien.id})">
                             <h3 class="text-lg font-bold text-gray-800">${bien.nom}</h3>
                             <div class="text-xs text-gray-400 mt-0.5 flex flex-wrap gap-x-4 gap-y-1">
-                                <span>${bien.dateAjout}</span>
+                                <span>Créé le: ${bien.dateAjout}</span>
                                 <span><strong>Type:</strong> ${bien.type}</span>
                                 <span><strong>Surface:</strong> ${bien.surface} m²</span>
                                 <span><strong>Pièces:</strong> ${bien.pieces || '—'}</span>
@@ -365,10 +502,10 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button onclick="toggleProspectionDirecte(${bien.id})" title="Changer l'état de prospection" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${prospClass}">
+                            <button onclick="toggleProspectionDirecte(${bien.id})" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${prospClass}">
                                 ${prospText}
                             </button>
-                            <button id="badge-${bien.id}" onclick="toggleActifInactif(${bien.id})" title="Cliquez pour changer la disponibilité" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${bc}">X ${bien.statut.slice(0, -1)}</button>
+                            <button onclick="toggleActifInactif(${bien.id})" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${bc}">X ${bien.statut.slice(0, -1)}</button>
                             <button onclick="toggleCollapse(${bien.id})" class="text-gray-400 cursor-pointer"><i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5"></i></button>
                         </div>
                     </div>
@@ -403,7 +540,7 @@
         }
 
         fetchFromCloud();
-        setInterval(fetchFromCloud, 3000);
+        setInterval(fetchFromCloud, 4000);
     </script>
 </body>
 </html>
