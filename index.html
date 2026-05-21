@@ -124,7 +124,6 @@
                     <button data-filter-type="Autre" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Autres</button>
                 </nav>
             </div>
-            
             <div class="flex flex-col gap-2 pt-2 border-t border-gray-100">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">🚀 Organiser l'ordre d'affichage (Haut en Bas) :</span>
                 <div class="flex flex-wrap gap-2">
@@ -148,7 +147,7 @@
         let listeBiens = [];
         let filtreStatutActuel = "Tous";
         let filtreTypeActuel = "Tous";
-        let triActuel = "date-desc"; // Tri par défaut
+        let triActuel = "date-desc"; 
         let openCards = JSON.parse(sessionStorage.getItem('openCards')) || {};
         let isSyncPaused = false; 
 
@@ -160,6 +159,63 @@
         const editIdInput = document.getElementById('editId');
         const csvFileInput = document.getElementById('csvFileInput');
         const triSelect = document.getElementById('triSelect');
+
+        // RÉFÉRENTIEL GÉOGRAPHIQUE POUR UN DECODAGE EXCLUSIF VIA COORDONNÉES GPS
+        const RUES_REFERENCE = [
+            { lat: 43.5507, lng: 7.0224, ville: "Cannes", rue: "Boulevard de la Croisette" },
+            { lat: 43.5524, lng: 7.0185, ville: "Cannes", rue: "Rue d'Antibes" },
+            { lat: 43.5552, lng: 7.0118, ville: "Cannes", rue: "Avenue de Grasse" },
+            { lat: 43.5581, lng: 7.0252, ville: "Cannes", rue: "Avenue de Madrid" },
+            { lat: 43.5511, lng: 7.0125, ville: "Cannes", rue: "Rue Félix Faure" },
+            { lat: 43.5595, lng: 7.0162, ville: "Cannes", rue: "Boulevard Carnot" },
+            { lat: 43.5621, lng: 7.0081, ville: "Cannes", rue: "Avenue de la Croix des Gardes" },
+            { lat: 43.5685, lng: 7.0212, ville: "Le Cannet", rue: "Boulevard Sadi Carnot" },
+            { lat: 43.5746, lng: 7.0177, ville: "Le Cannet", rue: "Boulevard du Corentin Celton" },
+            { lat: 43.5784, lng: 7.0236, ville: "Le Cannet", rue: "Avenue de l'Europe" },
+            { lat: 43.5824, lng: 7.0254, ville: "Le Cannet", rue: "Chemin de Trabaud" },
+            { lat: 43.5808, lng: 7.0267, ville: "Le Cannet", rue: "Avenue des Écoles" },
+            { lat: 43.5751, lng: 7.0034, ville: "Le Cannet", rue: "Chemin de la Calade" },
+            { lat: 43.5712, lng: 7.0315, ville: "Le Cannet", rue: "Chemin du Pen Chai" }
+        ];
+
+        function extraireCoordonneesDecimales(gpsString) {
+            if (!gpsString) return null;
+            try {
+                const parts = gpsString.split(',');
+                if (parts.length === 2) {
+                    const lat = parseFloat(parts[0].trim());
+                    const lng = parseFloat(parts[1].trim());
+                    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+                }
+                const matches = gpsString.match(/([0-9.]+)/g);
+                if (matches && matches.length >= 2) {
+                    return { lat: parseFloat(matches[0]), lng: parseFloat(matches[1]) };
+                }
+            } catch(e) {}
+            return null;
+        }
+
+        function calculerDistancePoints(p1, p2) {
+            return Math.sqrt(Math.pow(p1.lat - p2.lat, 2) + Math.pow(p1.lng - p2.lng, 2));
+        }
+
+        function decoderLieuParGPS(gpsString) {
+            let p = extraireCoordonneesDecimales(gpsString);
+            if (!p) return { ville: "Cannes", rue: "Adresse indéterminée" };
+
+            let plusProche = RUES_REFERENCE[0];
+            let distanceMin = Infinity;
+
+            for (let i = 0; i < RUES_REFERENCE.length; i++) {
+                let dist = calculerDistancePoints(p, RUES_REFERENCE[i]);
+                if (dist < distanceMin) {
+                    distanceMin = dist;
+                    plusProche = RUES_REFERENCE[i];
+                }
+            }
+            let communeStrict = p.lat > 43.5645 ? "Le Cannet" : "Cannes";
+            return { ville: communeStrict, rue: plusProche.rue };
+        }
 
         async function uploadToCloud() {
             await fetch(`${FIREBASE_URL}/biens.json`, {
@@ -235,20 +291,6 @@
             await uploadToCloud();
             renderApp();
         });
-
-        function parseCSVLine(line, separator) {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"') { inQuotes = !inQuotes; } 
-                else if (char === separator && !inQuotes) { result.push(current.trim()); current = ''; } 
-                else { current += char; }
-            }
-            result.push(current.trim());
-            return result.map(cell => cell.replace(/^["']|["']$/g, '').trim());
-        }
 
         csvFileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -333,7 +375,7 @@
                     renderApp(); 
                     await uploadToCloud(); 
                     setTimeout(() => { isSyncPaused = false; }, 10000); 
-                    alert(`Succès ! ${countImported} fiches ont été proprement importées et synchronisées.`);
+                    alert(`Succès ! ${countImported} fiches proprement chargées et synchronisées.`);
                     csvFileInput.value = "";
                 } else {
                     isSyncPaused = false;
@@ -411,37 +453,10 @@
             window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(coords), '_blank');
         }
 
-        // FONCTIONS LOGIQUES POUR LE CALCUL DE TRAJET DE PROSPECTION (ALGORITHME DU PLUS PROCHE VOISIN)
-        function extraireCoordonneesDecimales(gpsString) {
-            if (!gpsString) return null;
-            try {
-                // Gestion des formats standards type : 43.5746, 7.0177
-                const parts = gpsString.split(',');
-                if (parts.length === 2) {
-                    const lat = parseFloat(parts[0].trim());
-                    const lng = parseFloat(parts[1].trim());
-                    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
-                }
-                // Détecteur de secours si format DMS (ex: 43°34'41"N...)
-                const matches = gpsString.match(/([0-9.]+)/g);
-                if (matches && matches.length >= 2) {
-                    return { lat: parseFloat(matches[0]), lng: parseFloat(matches[1]) };
-                }
-            } catch(e) { return null; }
-            return null;
-        }
-
-        function calculerDistancePoints(p1, p2) {
-            return Math.sqrt(Math.pow(p1.lat - p2.lat, 2) + Math.pow(p1.lng - p2.lng, 2));
-        }
-
         function trierParTrajetProche(arr) {
             if (arr.length <= 1) return arr;
-            
             const listeResultat = [];
             const copieBiens = [...arr];
-            
-            // On extrait le premier élément de référence pour commencer le voyage
             let current = copieBiens.shift();
             listeResultat.push(current);
             
@@ -455,32 +470,14 @@
                         let targetCoords = extraireCoordonneesDecimales(copieBiens[i].gps);
                         if (targetCoords) {
                             let dist = calculerDistancePoints(currentCoords, targetCoords);
-                            if (dist < distanceMin) {
-                                distanceMin = dist;
-                                plusProcheIdx = i;
-                            }
+                            if (dist < distanceMin) { distanceMin = dist; plusProcheIdx = i; }
                         }
                     }
                 }
-                
-                // On bascule sur le plus proche trouvé
                 current = copieBiens.splice(plusProcheIdx, 1)[0];
                 listeResultat.push(current);
             }
             return listeResultat;
-        }
-
-        function convertirDateFr(dateStr) {
-            if (!dateStr) return 0;
-            try {
-                const p = dateStr.split('/');
-                if (p.length === 3) {
-                    let annee = parseInt(p[2]);
-                    if (annee < 100) annee += 2000; // Gestion des formats 25 ou 26
-                    return new Date(annee, parseInt(p[1]) - 1, parseInt(p[0])).getTime();
-                }
-            } catch(e) { return 0; }
-            return 0;
         }
 
         function convertirPrixNumerique(prixStr) {
@@ -518,38 +515,27 @@
             });
         }
 
-        // Ecouteur du menu de sélection de tri
-        triSelect.addEventListener('change', (e) => {
-            triActuel = e.target.value;
-            renderApp();
-        });
+        triSelect.addEventListener('change', (e) => { triActuel = e.target.value; renderApp(); });
 
         function renderApp() {
             renderCountersAndTabs();
             annoncesContainer.innerHTML = '';
             
-            // 1. Étape de Filtrage
             let bf = listeBiens.filter(b => {
                 const matchStatut = (filtreStatutActuel === "Tous") || (filtreStatutActuel === "Prospectés" && b.prospectionFaite) || (b.statut === filtreStatutActuel);
                 const matchType = (filtreTypeActuel === "Tous" || b.type === filtreTypeActuel);
                 return matchStatut && matchType;
             });
 
-            // 2. Étape de Tri Dynamique Multi-critères (Haut en Bas)
-            if (triActuel === "date-desc") {
-                bf.sort((a, b) => b.id - a.id); // Par ID technique ou récence d'ajout
-            } else if (triActuel === "date-asc") {
-                bf.sort((a, b) => a.id - b.id);
-            } else if (triActuel === "prix-asc") {
-                bf.sort((a, b) => convertirPrixNumerique(a.prix) - convertirPrixNumerique(b.prix));
-            } else if (triActuel === "prix-desc") {
-                bf.sort((a, b) => convertirPrixNumerique(b.prix) - convertirPrixNumerique(a.prix));
-            } else if (triActuel === "trajet") {
-                bf = trierParTrajetProche(bf); // Appel de la fonction de calcul de proximité d'adresses GPS
-            }
+            // GESTION DU TRI MULTI-CRITÈRES DE HAUT EN BAS
+            if (triActuel === "date-desc") { bf.sort((a, b) => b.id - a.id); } 
+            else if (triActuel === "date-asc") { bf.sort((a, b) => a.id - b.id); } 
+            else if (triActuel === "prix-asc") { bf.sort((a, b) => convertirPrixNumerique(a.prix) - convertirPrixNumerique(b.prix)); } 
+            else if (triActuel === "prix-desc") { bf.sort((a, b) => convertirPrixNumerique(b.prix) - convertirPrixNumerique(a.prix)); } 
+            else if (triActuel === "trajet") { bf = trierParTrajetProche(bf); }
 
             if(bf.length === 0) {
-                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien ne correspond à vos critères combinés.</div>`;
+                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien trouvé.</div>`;
                 return;
             }
 
@@ -561,6 +547,11 @@
                 let prospClass = bien.prospectionFaite ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-rose-50 text-rose-600 border border-rose-200";
                 let prospText = bien.prospectionFaite ? "✅ FAIT" : "❌ À FAIRE";
 
+                let geoLoc = decoderLieuParGPS(bien.gps);
+
+                // TYPOGRAPHIE ET BADGES UNIFIÉS : TEXTE EN GRAS ET FOND GRISÉ SANS ICONES NI MOT-CLÉ "TYPE"
+                const classBadgeUnique = "text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md font-bold";
+
                 const isExpanded = !!openCards[bien.id];
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden";
@@ -568,12 +559,13 @@
                     <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="cursor-pointer flex-1" onclick="toggleCollapse(${bien.id})">
                             <h3 class="text-lg font-bold text-gray-800">${bien.nom}</h3>
-                            <div class="text-xs text-gray-400 mt-0.5 flex flex-wrap gap-x-4 gap-y-1">
-                                <span>${bien.dateAjout}</span>
-                                <span><strong>Type:</strong> ${bien.type}</span>
-                                <span><strong>Surface:</strong> ${bien.surface} m²</span>
-                                <span><strong>Pièces:</strong> ${bien.pieces || '—'}</span>
-                                <span><strong>Prix:</strong> ${bien.prix} €</span>
+                            <div class="text-xs mt-1.5 flex flex-wrap gap-2">
+                                <span class="${classBadgeUnique}">${bien.dateAjout}</span>
+                                <span class="${classBadgeUnique}">${bien.surface} m²</span>
+                                <span class="${classBadgeUnique}">${bien.pieces || '—'} pièces</span>
+                                <span class="${classBadgeUnique}">${bien.prix} €</span>
+                                <span class="${classBadgeUnique}">Ville : ${geoLoc.ville}</span>
+                                <span class="${classBadgeUnique}">Rue : ${geoLoc.rue}</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
