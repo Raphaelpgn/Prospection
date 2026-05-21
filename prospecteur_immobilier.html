@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prospecteur Immobilier - Cloud Sync</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-[#2c4c5e] text-white py-6 text-center shadow-md">
+        <h1 class="text-2xl font-bold flex items-center justify-center gap-2">🏠 Prospecteur Immobilier v2</h1>
+        <p class="text-sm text-gray-300 mt-1">Synchronisation Cloud en Temps Réel (Multi-plateforme)</p>
+    </header>
+
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 id="formTitle" class="text-[#2c4c5e] font-semibold text-lg flex items-center gap-2 mb-4">
+                <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-500"></i> Ajouter une nouvelle annonce
+            </h2>
+            <form id="annonceForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="editId" value="">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Nom du bien</label>
+                    <input type="text" id="nomBien" placeholder="Ex: Villa mystique" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Lien de l'annonce</label>
+                    <input type="url" id="lienAnnonce" placeholder="https://..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Coordonnées GPS</label>
+                    <input type="text" id="gps" placeholder="Ex: 43.556515, 7.020088" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Type de bien</label>
+                    <select id="typeBien" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                        <option value="Maison">Maison</option>
+                        <option value="Appartement">Appartement</option>
+                        <option value="Terrain">Terrain</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Surface (m²)</label>
+                    <input type="number" id="surface" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Nombre de pièces</label>
+                    <input type="number" id="pieces" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Prix (€)</label>
+                    <input type="number" id="prix" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div class="md:col-span-2">
+                    <select id="nouveauBien" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                        <option value="nouveau">-- Ceci est un nouveau bien --</option>
+                        <option value="ancien">Bien déjà connu / Suivi</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Nom du contact</label>
+                    <input type="text" id="nomContact" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Prénom du contact</label>
+                    <input type="text" id="prenomContact" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div class="md:col-span-2 flex gap-2">
+                    <button type="submit" id="submitBtn" class="flex-1 bg-[#2c4c5e] text-white text-sm font-medium py-3 rounded-lg cursor-pointer">Ajouter l'annonce</button>
+                    <button type="button" id="cancelEditBtn" class="hidden bg-gray-300 text-gray-700 text-sm py-3 px-6 rounded-lg">Annuler</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
+            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-total" class="block text-2xl font-bold text-gray-800">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Total</span></div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-actifs" class="block text-2xl font-bold text-emerald-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Actifs</span></div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-inactifs" class="block text-2xl font-bold text-rose-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Inactifs</span></div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-prospectes" class="block text-2xl font-bold text-amber-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Prospectés</span></div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-mandats" class="block text-2xl font-bold text-indigo-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Mandats</span></div>
+        </section>
+
+        <section class="bg-white p-4 rounded-xl border border-gray-100 space-y-4">
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtrer par Statut :</span>
+                <nav id="tabsStatut" class="flex flex-wrap gap-2">
+                    <button data-filter-statut="Tous" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Tous</button>
+                    <button data-filter-statut="Actifs" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Actifs</button>
+                    <button data-filter-statut="Inactifs" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Inactifs</button>
+                    <button data-filter-statut="Prospectés" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Prospectés</button>
+                    <button data-filter-statut="Mandats" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Mandats</button>
+                </nav>
+            </div>
+            <div class="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtrer par Type :</span>
+                <nav id="tabsType" class="flex flex-wrap gap-2">
+                    <button data-filter-type="Tous" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Tous les types</button>
+                    <button data-filter-type="Maison" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Maisons</button>
+                    <button data-filter-type="Appartement" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Appartements</button>
+                    <button data-filter-type="Terrain" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Terrains</button>
+                    <button data-filter-type="Autre" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Autres</button>
+                </nav>
+            </div>
+        </section>
+
+        <section id="annoncesList" class="space-y-4"></section>
+    </main>
+
+    <script>
+        const FIREBASE_URL = "https://site-prospection-2cb49-default-rtdb.europe-west1.firebasedatabase.app";
+
+        let listeBiens = [];
+        let filtreStatutActuel = "Tous";
+        let filtreTypeActuel = "Tous";
+        let openCards = JSON.parse(sessionStorage.getItem('openCards')) || {};
+
+        const form = document.getElementById('annonceForm');
+        const annoncesContainer = document.getElementById('annoncesList');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const editIdInput = document.getElementById('editId');
+
+        async function uploadToCloud() {
+            await fetch(`${FIREBASE_URL}/biens.json`, {
+                method: 'PUT',
+                body: JSON.stringify(listeBiens)
+            });
+        }
+
+        async function fetchFromCloud() {
+            try {
+                const response = await fetch(`${FIREBASE_URL}/biens.json`);
+                const data = await response.json();
+                
+                // Si la base en ligne est neuve ou vide (null), on injecte le bien de démo initial
+                if (!data || data.length === 0) {
+                    listeBiens = [{ id: 1716284000000, nom: "Villa mystique", lien: "https://example.com/annonce1", gps: "43.556515, 7.020088", type: "Maison", surface: "580", pieces: "18", prix: "5 900 000", contactNom: "Robert", contactPrenom: "Daniel", statut: "Inactifs", dateAjout: "21/05/2026", prospectionFaite: false, mandatSigne: false }];
+                    await uploadToCloud();
+                } else {
+                    listeBiens = data;
+                }
+                renderApp();
+            } catch (e) { console.error("Erreur de synchro Cloud :", e); }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const idValue = editIdInput.value;
+            const prixRaw = document.getElementById('prix').value;
+            const formatPrix = prixRaw ? Number(prixRaw).toLocaleString('fr-FR') : '—';
+
+            if (idValue) {
+                const idx = listeBiens.findIndex(b => b.id == idValue);
+                if (idx !== -1) {
+                    listeBiens[idx].nom = document.getElementById('nomBien').value || 'Sans nom';
+                    listeBiens[idx].lien = document.getElementById('lienAnnonce').value || '';
+                    listeBiens[idx].gps = document.getElementById('gps').value || '';
+                    listeBiens[idx].type = document.getElementById('typeBien').value;
+                    listeBiens[idx].surface = document.getElementById('surface').value || '—';
+                    listeBiens[idx].pieces = document.getElementById('pieces').value || '—';
+                    if (prixRaw) listeBiens[idx].prix = formatPrix;
+                    listeBiens[idx].contactNom = document.getElementById('nomContact').value || 'Non renseigné';
+                    listeBiens[idx].contactPrenom = document.getElementById('prenomContact').value || '';
+                }
+                resetFormMode();
+            } else {
+                const nouveauBien = {
+                    id: Date.now(),
+                    nom: document.getElementById('nomBien').value || 'Sans nom',
+                    lien: document.getElementById('lienAnnonce').value || '',
+                    gps: document.getElementById('gps').value || '',
+                    type: document.getElementById('typeBien').value,
+                    surface: document.getElementById('surface').value || '—',
+                    pieces: document.getElementById('pieces').value || '—',
+                    prix: formatPrix,
+                    contactNom: document.getElementById('nomContact').value || 'Non renseigné',
+                    contactPrenom: document.getElementById('prenomContact').value || '',
+                    statut: "Inactifs",
+                    dateAjout: new Date().toLocaleDateString('fr-FR'),
+                    prospectionFaite: false,
+                    fancyPieces: document.getElementById('pieces').value || '—',
+                    mandatSigne: false
+                };
+                listeBiens.unshift(nouveauBien);
+                form.reset();
+            }
+            await uploadToCloud();
+            renderApp();
+        });
+
+        function editContact(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+            editIdInput.value = bien.id;
+            document.getElementById('nomBien').value = bien.nom === 'Sans nom' ? '' : bien.nom;
+            document.getElementById('lienAnnonce').value = bien.lien;
+            document.getElementById('gps').value = bien.gps;
+            document.getElementById('typeBien').value = bien.type;
+            document.getElementById('surface').value = bien.surface === '—' ? '' : bien.surface;
+            document.getElementById('pieces').value = bien.pieces === '—' ? '' : bien.pieces;
+            document.getElementById('prix').value = bien.prix === '—' ? '' : bien.prix.replace(/\s/g, '');
+            document.getElementById('nomContact').value = bien.contactNom === 'Non renseigné' ? '' : bien.contactNom;
+            document.getElementById('prenomContact').value = bien.contactPrenom;
+
+            formTitle.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-amber-500"></i> Modifier la fiche : ${bien.nom}`;
+            submitBtn.innerText = "Enregistrer les modifications";
+            cancelEditBtn.classList.remove('hidden');
+            lucide.createIcons();
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetFormMode() {
+            editIdInput.value = "";
+            form.reset();
+            formTitle.innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-indigo-500"></i> Ajouter une nouvelle annonce`;
+            submitBtn.innerText = "Ajouter l'annonce";
+            cancelEditBtn.classList.add('hidden');
+            lucide.createIcons();
+        }
+
+        cancelEditBtn.addEventListener('click', resetFormMode);
+
+        async function toggleActifInactif(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+            bien.statut = (bien.statut === "Actifs") ? "Inactifs" : "Actifs";
+            if (bien.statut === "Actifs") { bien.prospectionFaite = false; bien.mandatSigne = false; }
+            await uploadToCloud();
+            renderApp();
+        }
+
+        async function updateBienCheckboxes(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+            bien.prospectionFaite = document.getElementById(`prosp-${id}`).checked;
+            bien.mandatSigne = document.getElementById(`mandat-${id}`).checked;
+            bien.statut = bien.mandatSigne ? "Mandats" : (bien.prospectionFaite ? "Prospectés" : "Inactifs");
+
+            await uploadToCloud();
+            renderCountersAndTabs();
+            
+            const badge = document.getElementById(`badge-${id}`);
+            if(badge) {
+                let bc = "bg-rose-50 text-rose-600 border border-rose-200";
+                if (bien.statut === "Prospectés") bc = "bg-amber-50 text-amber-600 border border-amber-200";
+                if (bien.statut === "Mandats") bc = "bg-indigo-50 text-indigo-600 border border-indigo-200";
+                if (bien.statut === "Actifs") bc = "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                badge.className = `text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer ${bc}`;
+                badge.innerText = `X ${bien.statut.slice(0, -1)}`;
+            }
+        }
+
+        function toggleCollapse(id) { openCards[id] = !openCards[id]; sessionStorage.setItem('openCards', JSON.stringify(openCards)); renderApp(); }
+        async function supprimerBien(id) { if(confirm("Supprimer définitivement ce bien ?")) { listeBiens = listeBiens.filter(b => b.id !== id); delete openCards[id]; await uploadToCloud(); renderApp(); } }
+        
+        function ouvrirMaps(coords) {
+            if(!coords) { alert("Aucune coordonnée GPS spécifiée."); return; }
+            window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(coords), '_blank');
+        }
+
+        function renderCountersAndTabs() {
+            const cs = { Tous: listeBiens.length, Actifs: 0, Inactifs: 0, Prospectés: 0, Mandats: 0 };
+            const ct = { Tous: listeBiens.length, Maison: 0, Appartement: 0, Terrain: 0, Autre: 0 };
+            
+            listeBiens.forEach(b => { 
+                if(cs[b.statut] !== undefined) cs[b.statut]++; 
+                if(ct[b.type] !== undefined) ct[b.type]++; 
+            });
+
+            document.getElementById('count-total').innerText = cs.Tous;
+            document.getElementById('count-actifs').innerText = cs.Actifs;
+            document.getElementById('count-inactifs').innerText = cs.Inactifs;
+            document.getElementById('count-prospectes').innerText = cs.Prospectés;
+            document.getElementById('count-mandats').innerText = cs.Mandats;
+
+            document.querySelectorAll('.tab-statut-btn').forEach(btn => {
+                const f = btn.getAttribute('data-filter-statut');
+                btn.innerText = `${f} (${cs[f]})`;
+                btn.className = f === filtreStatutActuel ? "tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md bg-[#2c4c5e] text-white cursor-pointer" : "tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md bg-white text-gray-600 border cursor-pointer hover:bg-gray-50";
+            });
+            document.querySelectorAll('.tab-type-btn').forEach(btn => {
+                const t = btn.getAttribute('data-filter-type');
+                let lbl = t === 'Tous' ? 'Tous les types' : t + 's';
+                btn.innerText = `${lbl} (${ct[t]})`;
+                btn.className = t === filtreTypeActuel ? "tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md bg-[#2c4c5e] text-white cursor-pointer" : "tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md bg-white text-gray-600 border cursor-pointer hover:bg-gray-50";
+            });
+        }
+
+        document.getElementById('tabsStatut').addEventListener('click', (e) => { if(e.target.classList.contains('tab-statut-btn')) { filtreStatutActuel = e.target.getAttribute('data-filter-statut'); renderApp(); } });
+        document.getElementById('tabsType').addEventListener('click', (e) => { if(e.target.classList.contains('tab-type-btn')) { filtreTypeActuel = e.target.getAttribute('data-filter-type'); renderApp(); } });
+
+        function renderApp() {
+            renderCountersAndTabs();
+            annoncesContainer.innerHTML = '';
+            
+            const bf = listeBiens.filter(b => (filtreStatutActuel === "Tous" || b.statut === filtreStatutActuel) && (filtreTypeActuel === "Tous" || b.type === filtreTypeActuel));
+
+            if(bf.length === 0) {
+                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien trouvé.</div>`;
+                return;
+            }
+
+            bf.forEach(bien => {
+                let bc = "bg-rose-50 text-rose-600 border border-rose-200";
+                if (bien.statut === "Prospectés") bc = "bg-amber-50 text-amber-600 border border-amber-200";
+                if (bien.statut === "Mandats") bc = "bg-indigo-50 text-indigo-600 border border-indigo-200";
+                if (bien.statut === "Actifs") bc = "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                const isExpanded = !!openCards[bien.id];
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden";
+                card.innerHTML = `
+                    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="cursor-pointer flex-1" onclick="toggleCollapse(${bien.id})">
+                            <h3 class="text-lg font-bold text-gray-800">${bien.nom}</h3>
+                            <div class="text-xs text-gray-400 mt-0.5 flex flex-wrap gap-x-4 gap-y-1">
+                                <span>${bien.dateAjout}</span>
+                                <span><strong>Type:</strong> ${bien.type}</span>
+                                <span><strong>Surface:</strong> ${bien.surface} m²</span>
+                                <span><strong>Pièces:</strong> ${bien.pieces || '—'}</span>
+                                <span><strong>Prix:</strong> ${bien.prix} €</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button id="badge-${bien.id}" onclick="toggleActifInactif(${bien.id})" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${bc}">X ${bien.statut.slice(0, -1)}</button>
+                            <button onclick="toggleCollapse(${bien.id})" class="text-gray-400 cursor-pointer"><i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                    <div class="${isExpanded ? 'block' : 'hidden'} p-5 space-y-4 bg-gray-50/50 border-t">
+                        <div class="bg-white border rounded-xl p-4 max-w-md shadow-2xs">
+                            <div class="text-xs font-semibold text-slate-500 mb-1">Contact associé</div>
+                            <div class="text-sm font-bold text-gray-800">${bien.contactPrenom} ${bien.contactNom}</div>
+                            <button onclick="editContact(${bien.id})" class="mt-3 text-xs bg-indigo-50 text-indigo-600 font-semibold px-3 py-1.5 rounded-md border border-indigo-200 cursor-pointer hover:bg-indigo-100">✏️ Modifier la fiche / contact</button>
+                        </div>
+                        <div class="bg-white border rounded-xl p-4 flex flex-wrap gap-6 items-center shadow-2xs">
+                            <label class="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                                <input type="checkbox" id="prosp-${bien.id}" ${bien.prospectionFaite ? 'checked' : ''} onchange="updateBienCheckboxes(${bien.id})" class="w-4 h-4 text-indigo-600 rounded border-gray-300"> 📋 Prospection réalisée
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                                <input type="checkbox" id="mandat-${bien.id}" ${bien.mandatSigne ? 'checked' : ''} onchange="updateBienCheckboxes(${bien.id})" class="w-4 h-4 text-indigo-600 rounded border-gray-300"> 📝 Mandat signé
+                            </label>
+                        </div>
+                        <button onclick="ouvrirMaps('${bien.gps}')" class="w-full bg-[#1e3442] hover:bg-[#14232c] text-white text-xs font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer">🗺️ Ouvrir sur Google Maps</button>
+                        <div class="space-y-2">
+                            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Liens sources :</div>
+                            <div class="bg-white border rounded-xl p-4 flex items-center justify-between shadow-2xs">
+                                ${bien.lien ? `<a href="${bien.lien}" target="_blank" class="text-xs text-sky-600 font-semibold hover:underline">Ouvrir l'annonce externe ↗</a>` : '<span class="text-xs text-gray-400 italic">Aucun lien enregistré</span>'}
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t flex justify-center">
+                            <button onclick="supprimerBien(${bien.id})" class="text-xs font-medium text-rose-500 hover:underline cursor-pointer">Supprimer définitivement cette fiche</button>
+                        </div>
+                    </div>
+                `;
+                annoncesContainer.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        fetchFromCloud();
+        setInterval(fetchFromCloud, 3000);
+    </script>
+</body>
+</html>
