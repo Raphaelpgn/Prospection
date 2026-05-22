@@ -253,8 +253,25 @@
             mapInstance.on('movestart', () => { mapCentreeAutomatiquement = true; });
         }
 
+        // VERROU POPUP CONTRE LES MISES A JOUR DU TIMEOUT FIREBASE
+        function unPopupEstOuvertActuellement() {
+            let ouvert = false;
+            if (mapInstance) {
+                mapInstance.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker && layer.getPopup() && layer.getPopup().isOpen()) {
+                        ouvert = true;
+                    }
+                });
+            }
+            return ouvert;
+        }
+
         function updateMapMarkers() {
             if (!markersGroup || !mapInstance) return;
+            
+            // GARDE-FOU ESSENTIEL : Si un popup est ouvert à l'écran, on bloque le nettoyage du setInterval pour éviter qu'il ne se ferme
+            if (unPopupEstOuvertActuellement()) return;
+
             markersGroup.clearLayers(); 
             dictMarqueursReferences = {}; 
 
@@ -298,7 +315,10 @@
                     </div>
                 `;
 
-                let marker = L.marker([coords.lat, coords.lng], { icon: markerIcon }).bindPopup(popupHTML);
+                let marker = L.marker([coords.lat, coords.lng], { icon: markerIcon }).bindPopup(popupHTML, {
+                    autoClose: false, // Bloque la fermeture automatique native de Leaflet au clic extérieur
+                    closeOnClick: false // Force la popup à rester ouverte sauf si on clique sur la croix
+                });
                 
                 marker.on('click', async () => {
                     let freshLoc = await fetchLieuExactParGps(bien.gps);
