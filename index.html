@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prospecteur Immobilier - Cloud Sync</title>
+    <!-- Tailwind et Lucide Icons -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet.js (Librairie de Cartographie Interactive) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -23,6 +25,7 @@
 
     <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6">
 
+        <!-- FORMULAIRE PLIABLE -->
         <section class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div id="toggleFormHeader" class="bg-slate-50 p-4 border-b border-gray-100 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors select-none">
                 <h2 id="formTitle" class="text-[#2c4c5e] font-bold text-base flex items-center gap-2">
@@ -113,6 +116,7 @@
             </div>
         </section>
 
+        <!-- CARTE INTERACTIVE -->
         <section id="sectionMapContainer" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-2">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-wider pl-1 gap-2">
                 <span>🗺️ Carte Interactive de Prospection</span>
@@ -126,27 +130,18 @@
             <div id="map" class="w-full h-80 md:h-[400px] rounded-lg border border-gray-200 z-0"></div>
         </section>
 
-        <section class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
-            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-total" class="block text-2xl font-bold text-gray-800">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Total</span></div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-actifs" class="block text-2xl font-bold text-emerald-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Actifs</span></div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-inactifs" class="block text-2xl font-bold text-rose-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Inactifs</span></div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-prospectes" class="block text-2xl font-bold text-amber-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Prospectés</span></div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100"><span id="count-mandats" class="block text-2xl font-bold text-indigo-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Mandats</span></div>
+        <!-- COMPTEURS DEVENUS LES NOUVEAUX FILTRES DIRECTS -->
+        <section class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center select-none">
+            <div id="card-filter-Tous" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-total" class="block text-2xl font-bold text-gray-800">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Total</span></div>
+            <div id="card-filter-Actifs" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-actifs" class="block text-2xl font-bold text-emerald-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">À Faire</span></div>
+            <div id="card-filter-Inactifs" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-inactifs" class="block text-2xl font-bold text-rose-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Inactifs</span></div>
+            <div id="card-filter-Prospectés" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-prospectes" class="block text-2xl font-bold text-amber-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Prospectés</span></div>
+            <div id="card-filter-Mandats" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-mandats" class="block text-2xl font-bold text-indigo-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Mandats</span></div>
         </section>
 
+        <!-- FILTRAGES PAR TYPE ET TRIS (Ligne statut supprimée) -->
         <section class="bg-white p-4 rounded-xl border border-gray-100 space-y-4">
             <div class="flex flex-col gap-2">
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtrer par Statut :</span>
-                <nav id="tabsStatut" class="flex flex-wrap gap-2">
-                    <button data-filter-statut="Tous" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Tous</button>
-                    <button data-filter-statut="Actifs" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Actifs</button>
-                    <button data-filter-statut="Inactifs" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Inactifs</button>
-                    <button data-filter-statut="Prospectés" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Prospectés</button>
-                    <button data-filter-statut="NonProspectés" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Non Prospectés</button>
-                    <button data-filter-statut="Mandats" class="tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Mandats</button>
-                </nav>
-            </div>
-            <div class="flex flex-col gap-2 pt-2 border-t border-gray-100">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtrer par Type :</span>
                 <nav id="tabsType" class="flex flex-wrap gap-2">
                     <button data-filter-type="Tous" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Tous les types</button>
@@ -170,6 +165,7 @@
             </div>
         </section>
 
+        <!-- LISTE DES BIENS -->
         <section id="annoncesList" class="space-y-4"></section>
     </main>
 
@@ -253,7 +249,6 @@
             mapInstance.on('movestart', () => { mapCentreeAutomatiquement = true; });
         }
 
-        // VERROU POPUP CONTRE LES MISES A JOUR DU TIMEOUT FIREBASE
         function unPopupEstOuvertActuellement() {
             let ouvert = false;
             if (mapInstance) {
@@ -268,8 +263,6 @@
 
         function updateMapMarkers() {
             if (!markersGroup || !mapInstance) return;
-            
-            // GARDE-FOU ESSENTIEL : Si un popup est ouvert à l'écran, on bloque le nettoyage du setInterval pour éviter qu'il ne se ferme
             if (unPopupEstOuvertActuellement()) return;
 
             markersGroup.clearLayers(); 
@@ -278,6 +271,17 @@
             let bounds = [];
 
             listeBiens.forEach(bien => {
+                // APPLIQUE LE TRICIBLÉ DE TYPE ET STATUT SUR LA CARTE ÉGALEMENT
+                let matchStatut = false;
+                if (filtreStatutActuel === "Tous") matchStatut = true;
+                else if (filtreStatutActuel === "Prospectés") matchStatut = bien.prospectionFaite === true;
+                else if (filtreStatutActuel === "Actifs") matchStatut = (bien.statut === "Actifs" && bien.prospectionFaite === false);
+                else matchStatut = bien.statut === filtreStatutActuel;
+
+                const matchType = (filtreTypeActuel === "Tous" || bien.type === filtreTypeActuel);
+
+                if (!matchStatut || !matchType) return;
+
                 let coords = extraireCoordonneesDecimales(bien.gps);
                 if (!coords) return;
 
@@ -316,8 +320,8 @@
                 `;
 
                 let marker = L.marker([coords.lat, coords.lng], { icon: markerIcon }).bindPopup(popupHTML, {
-                    autoClose: false, // Bloque la fermeture automatique native de Leaflet au clic extérieur
-                    closeOnClick: false // Force la popup à rester ouverte sauf si on clique sur la croix
+                    autoClose: false, 
+                    closeOnClick: false 
                 });
                 
                 marker.on('click', async () => {
@@ -346,7 +350,7 @@
                 cardElement.classList.add('ring-4', 'ring-indigo-500');
                 setTimeout(() => cardElement.classList.remove('ring-4', 'ring-indigo-500'), 2000);
             } else {
-                alert("Le bien n'apparaît pas dans la liste filtrée actuelle en bas. Modifiez vos filtres de statut.");
+                alert("Le bien n'apparaît pas dans la liste filtrée actuelle en bas. Modifiez vos filtres.");
             }
         };
 
@@ -363,7 +367,7 @@
                     marker.openPopup();
                 }, 400);
             } else {
-                alert("La localisation de ce bien n'est pas chargée sur la carte actuelle.");
+                alert("La localisation de ce bien n'est pas chargée avec vos filtres de type actuels.");
             }
         };
 
@@ -587,7 +591,7 @@
                             if (normHeader === 'm²' || normHeader.includes('surface')) bienObj.surface = val;
                             if (normHeader.includes('pièce')) bienObj.pieces = val;
                             if (normHeader === 'prix') {
-                                let num = Number(val.replace(/\s/g, '').replace('€', '').replace(' ', ''));
+                                let num = Number(val.replace(/\s/g, '').replace('€', '').replace(' ', ''));
                                 bienObj.prix = !isNaN(num) && num > 0 ? num.toLocaleString('fr-FR') : val;
                             }
                             if (normHeader.includes('téléphone') || normHeader === 'tel') bienObj.tel = val;
@@ -726,21 +730,20 @@
 
         function convertirPrixNumerique(prixStr) {
             if (!prixStr) return 0;
-            const num = Number(prixStr.replace(/\s/g, '').replace('€', '').replace(' ', ''));
+            const num = Number(prixStr.replace(/\s/g, '').replace('€', '').replace(' ', ''));
             return isNaN(num) ? 0 : num;
         }
 
         function renderCountersAndTabs() {
-            const cs = { Tous: listeBiens.length, Actifs: 0, Inactifs: 0, Prospectés: 0, NonProspectés: 0, Mandats: 0 };
+            const cs = { Tous: listeBiens.length, Actifs: 0, Inactifs: 0, Prospectés: 0, Mandats: 0 };
             const ct = { Tous: listeBiens.length, Maison: 0, Appartement: 0, Terrain: 0, Autre: 0 };
             
             listeBiens.forEach(b => { 
-                if (b.statut === "Actifs") cs.Actifs++;
                 if (b.statut === "Inactifs") cs.Inactifs++;
                 if (b.statut === "Mandats") cs.Mandats++;
                 
                 if (b.prospectionFaite) cs.Prospectés++; 
-                else cs.NonProspectés++;
+                else if (b.statut === "Actifs") cs.Actifs++; // "À faire" comprend : Actif ET non prospecté uniquement
 
                 if(ct[b.type] !== undefined) ct[b.type]++; 
             });
@@ -751,14 +754,25 @@
             document.getElementById('count-prospectes').innerText = cs.Prospectés;
             document.getElementById('count-mandats').innerText = cs.Mandats;
 
-            document.querySelectorAll('.tab-statut-btn').forEach(btn => {
-                const f = btn.getAttribute('data-filter-statut');
-                let labelNom = f === 'NonProspectés' ? 'Non Prospectés' : f;
-                btn.innerText = `${labelNom} (${cs[f]})`;
-                if(f === filtreStatutActuel) {
-                    btn.className = "tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md bg-[#2c4c5e] text-white cursor-pointer select-none";
-                } else {
-                    btn.className = "tab-statut-btn px-4 py-1.5 text-xs font-medium rounded-md bg-white text-gray-600 border cursor-pointer hover:bg-gray-50 select-none";
+            // RENDU VISUEL DES ONGLETS COMPTEURS SÉLECTIONNÉS
+            const statutsAssocies = ["Tous", "Actifs", "Inactifs", "Prospectés", "Mandats"];
+            statutsAssocies.forEach(s => {
+                const el = document.getElementById(`card-filter-${s}`);
+                if (el) {
+                    if (s === filtreStatutActuel) {
+                        el.className = "bg-[#2c4c5e] text-white p-4 rounded-xl border border-[#2c4c5e] cursor-pointer transition-all shadow-md scale-[1.02]";
+                        el.querySelector('span:first-child').className = "block text-2xl font-bold text-white";
+                        el.querySelector('span:last-child').className = "text-xs font-semibold text-slate-200 uppercase";
+                    } else {
+                        el.className = "bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs";
+                        let clr = "text-gray-800";
+                        if (s === "Actifs") clr = "text-emerald-600";
+                        if (s === "Inactifs") clr = "text-rose-500";
+                        if (s === "Prospectés") clr = "text-amber-500";
+                        if (s === "Mandats") clr = "text-indigo-600";
+                        el.querySelector('span:first-child').className = `block text-2xl font-bold ${clr}`;
+                        el.querySelector('span:last-child').className = "text-xs font-semibold text-gray-400 uppercase";
+                    }
                 }
             });
 
@@ -775,16 +789,23 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.tab-statut-btn').forEach(btn => {
-                btn.onclick = () => {
-                    filtreStatutActuel = btn.getAttribute('data-filter-statut');
-                    renderApp();
-                };
+            // BRANCHEMENT DES COMPTEURS EN TANT QUE NOUVEAUX FILTRES DE STATUT
+            const statutsAssocies = ["Tous", "Actifs", "Inactifs", "Prospectés", "Mandats"];
+            statutsAssocies.forEach(s => {
+                const el = document.getElementById(`card-filter-${s}`);
+                if (el) {
+                    el.onclick = () => {
+                        filtreStatutActuel = s;
+                        renderApp();
+                    };
+                }
             });
 
             document.querySelectorAll('.tab-type-btn').forEach(btn => {
                 btn.onclick = () => {
                     filtreTypeActuel = btn.getAttribute('data-filter-type');
+                    // FORCE AUSSI LE RE-RENDU ET LE FILTRAGE DES MARQUEURS SUR LA CARTE
+                    mapCentreeAutomatiquement = false; 
                     renderApp();
                 };
             });
@@ -796,21 +817,21 @@
             renderCountersAndTabs();
             annoncesContainer.innerHTML = '';
             
-            if (listeBiens.length > 0) {
-                initMap();
-                updateMapMarkers();
-            }
-            
             let bf = listeBiens.filter(b => {
                 let matchStatut = false;
                 if (filtreStatutActuel === "Tous") matchStatut = true;
                 else if (filtreStatutActuel === "Prospectés") matchStatut = b.prospectionFaite === true;
-                else if (filtreStatutActuel === "NonProspectés") matchStatut = b.prospectionFaite === false;
+                else if (filtreStatutActuel === "Actifs") matchStatut = (b.statut === "Actifs" && b.prospectionFaite === false); // Notion "À faire"
                 else matchStatut = b.statut === filtreStatutActuel;
 
                 const matchType = (filtreTypeActuel === "Tous" || b.type === filtreTypeActuel);
                 return matchStatut && matchType;
             });
+
+            if (listeBiens.length > 0) {
+                initMap();
+                updateMapMarkers();
+            }
 
             if (triActuel === "date-desc") { bf.sort((a, b) => b.id - a.id); } 
             else if (triActuel === "date-asc") { bf.sort((a, b) => a.id - b.id); } 
