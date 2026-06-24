@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prospecteur Immobilier - Cloud Sync</title>
+    <!-- Tailwind et Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet.js (Librairie de Cartographie Interactive) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; }
+        .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); padding: 4px; }
+        .leaflet-popup-content { font-family: 'Segoe UI', Roboto, sans-serif; margin: 8px 12px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-[#2c4c5e] text-white py-6 text-center shadow-md">
+        <h1 class="text-2xl font-bold flex items-center justify-center gap-2">🏠 Prospecteur Immobilier v2</h1>
+        <p class="text-sm text-gray-300 mt-1">Synchronisation Cloud en Temps Réel (Multi-plateforme)</p>
+    </header>
+
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- FORMULAIRE PLIABLE -->
+        <section class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div id="toggleFormHeader" class="bg-slate-50 p-4 border-b border-gray-100 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                <h2 id="formTitle" class="text-[#2c4c5e] font-bold text-base flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-500"></i> Ajouter une nouvelle annonce
+                </h2>
+                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                    <span>Cliquez pour réduire/agrandir</span>
+                    <i id="formChevron" data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                </div>
+            </div>
+            
+            <div id="formContent" class="p-6 space-y-6" style="display: none;">
+                <form id="annonceForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="hidden" id="editId" value="">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Nom du bien</label>
+                        <input type="text" id="nomBien" placeholder="Ex: Villa mystique" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Lien de l'annonce</label>
+                        <input type="url" id="lienAnnonce" placeholder="https://..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Coordonnées GPS</label>
+                        <input type="text" id="gps" placeholder="Ex: 43.556515, 7.020088" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Type de bien</label>
+                        <select id="typeBien" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            <option value="Maison">Maison</option>
+                            <option value="Appartement">Appartement</option>
+                            <option value="Terrain">Terrain</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Surface (m²)</label>
+                        <input type="number" id="surface" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Nombre de pièces</label>
+                        <input type="number" id="pieces" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Prix (€)</label>
+                        <input type="text" id="prix" placeholder="Ex: 1 250 000" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <select id="nouveauBien" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            <option value="nouveau">-- Ceci est un nouveau bien --</option>
+                            <option value="ancien">Bien déjà connu / Suivi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Nom du contact</label>
+                        <input type="text" id="nomContact" placeholder="Robert" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Prénom du contact</label>
+                        <input type="text" id="prenomContact" placeholder="Daniel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Téléphone</label>
+                        <input type="tel" id="telContact" placeholder="06 12 34 56 78" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">E-mail</label>
+                        <input type="email" id="emailContact" placeholder="contact@exemple.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#2c4c5e]">
+                    </div>
+                    <div class="md:col-span-2 flex gap-2">
+                        <button type="submit" id="submitBtn" class="flex-1 bg-[#2c4c5e] text-white text-sm font-medium py-3 rounded-lg cursor-pointer">Ajouter l'annonce</button>
+                        <button type="button" id="cancelEditBtn" class="hidden bg-gray-300 text-gray-700 text-sm py-3 px-6 rounded-lg">Annuler</button>
+                    </div>
+                </form>
+
+                <div class="mt-6 pt-6 border-t border-dashed border-gray-200 bg-slate-50 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex-1 w-full">
+                        <h4 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">📥 Importer l'historique Google Sheets</h4>
+                        <p class="text-xs text-slate-500 mt-0.5">Glissez votre fichier .csv pour injecter vos recherches.</p>
+                        <input type="file" id="csvFileInput" accept=".csv" class="mt-2 text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                    </div>
+                    <div class="w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6 flex flex-col justify-center">
+                        <button id="btnExportCSV" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3 px-5 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer w-full shadow-xs">
+                            <i data-lucide="download" class="w-4 h-4"></i> 📤 Exporter au format .csv pour My Maps
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CARTE INTERACTIVE -->
+        <section id="sectionMapContainer" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-wider pl-1 gap-2">
+                <span>🗺️ Carte Interactive de Prospection</span>
+                <span class="flex flex-wrap gap-2 normal-case font-medium text-slate-600 select-none">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-black inline-block"></span>Inactif</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>À Faire</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>Fait</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>Mandat</span>
+                </span>
+            </div>
+            <div id="map" class="w-full h-80 md:h-[400px] rounded-lg border border-gray-200 z-0"></div>
+        </section>
+
+        <!-- COMPTEURS DEVENUS LES NOUVEAUX FILTRES DIRECTS -->
+        <section class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center select-none">
+            <div id="card-filter-Tous" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-total" class="block text-2xl font-bold text-gray-800">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Total</span></div>
+            <div id="card-filter-Actifs" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-actifs" class="block text-2xl font-bold text-emerald-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">À Faire</span></div>
+            <div id="card-filter-Inactifs" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-inactifs" class="block text-2xl font-bold text-rose-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Inactifs</span></div>
+            <div id="card-filter-Prospectés" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-prospectes" class="block text-2xl font-bold text-amber-500">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Prospectés</span></div>
+            <div id="card-filter-Mandats" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-mandats" class="block text-2xl font-bold text-indigo-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Mandats</span></div>
+        </section>
+
+        <!-- FILTRAGES PAR TYPE ET TRIS (Ligne statut supprimée) -->
+        <section class="bg-white p-4 rounded-xl border border-gray-100 space-y-4">
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtrer par Type :</span>
+                <nav id="tabsType" class="flex flex-wrap gap-2">
+                    <button data-filter-type="Tous" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Tous les types</button>
+                    <button data-filter-type="Maison" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Maisons</button>
+                    <button data-filter-type="Appartement" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Appartements</button>
+                    <button data-filter-type="Terrain" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Terrains</button>
+                    <button data-filter-type="Autre" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Autres</button>
+                </nav>
+            </div>
+            <div class="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">🚀 Organiser l'ordre d'affichage (Haut en Bas) :</span>
+                <div class="flex flex-wrap gap-2">
+                    <select id="triSelect" class="text-xs font-semibold px-4 py-2 bg-slate-50 border border-gray-200 rounded-md text-gray-700 focus:outline-none focus:border-[#2c4c5e] cursor-pointer">
+                        <option value="date-desc">⏱️ Récence : Du plus récent au moins récent</option>
+                        <option value="date-asc">⏳ Récence : Du moins récent au plus récent</option>
+                        <option value="trajet">🗺️ Itinéraire Intelligent : Trajet de prospection ciblée</option>
+                        <option value="prix-asc">📈 Prix : Ordre Croissant</option>
+                        <option value="prix-desc">📉 Prix : Ordre Décroissant</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- LISTE DES BIENS -->
+        <section id="annoncesList" class="space-y-4"></section>
+    </main>
+
+    <script>
+        const FIREBASE_URL = "https://site-prospection-2cb49-default-rtdb.europe-west1.firebasedatabase.app";
+
+        let listeBiens = [];
+        let cacheAdressesGps = JSON.parse(localStorage.getItem('cacheAdressesGps')) || {}; 
+        let filtreStatutActuel = "Tous";
+        let filtreTypeActuel = "Tous";
+        let triActuel = "date-desc"; 
+        let openCards = JSON.parse(sessionStorage.getItem('openCards')) || {};
+        let isSyncPaused = false; 
+        let isFormOpen = false; 
+        
+        let mapInstance = null;
+        let markersGroup = null;
+        let mapCentreeAutomatiquement = false; 
+        let dictMarqueursReferences = {}; 
+
+        const form = document.getElementById('annonceForm');
+        const annoncesContainer = document.getElementById('annoncesList');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const editIdInput = document.getElementById('editId');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const triSelect = document.getElementById('triSelect');
+        const btnExportCSV = document.getElementById('btnExportCSV');
+        
+        const toggleFormHeader = document.getElementById('toggleFormHeader');
+        const formContent = document.getElementById('formContent');
+        const formChevron = document.getElementById('formChevron');
+
+        async function uploadToCloud() {
+            try {
+                await fetch(`${FIREBASE_URL}/biens.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(listeBiens),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (e) {
+                console.error("Erreur d'écriture sur le Cloud :", e);
+            }
+        }
+
+        async function fetchLieuExactParGps(gpsString) {
+            let p = extraireCoordonneesDecimales(gpsString);
+            if (!p) return { ville: "Cannes", rue: "Adresse indéterminée" };
+
+            let key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
+            if (cacheAdressesGps[key] && cacheAdressesGps[key].rue !== "Calcul...") return cacheAdressesGps[key];
+
+            try {
+                let response = await fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${p.lng}&lat=${p.lat}`);
+                let data = await response.json();
+                
+                if (data && data.features && data.features.length > 0) {
+                    let props = data.features[0].properties;
+                    let rue = props.street || props.name || "Rue non répertoriée";
+                    let ville = props.city || (p.lat > 43.5645 ? "Le Cannet" : "Cannes");
+                    
+                    cacheAdressesGps[key] = { ville, rue };
+                    localStorage.setItem('cacheAdressesGps', JSON.stringify(cacheAdressesGps));
+                    return cacheAdressesGps[key];
+                }
+            } catch(e) { console.error(e); }
+
+            return { ville: (p.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Secteur repéré via GPS" };
+        }
+
+        function initMap() {
+            if (mapInstance) return;
+            mapInstance = L.map('map').setView([43.5600, 7.0180], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(mapInstance);
+
+            markersGroup = L.layerGroup().addTo(mapInstance);
+            mapInstance.on('movestart', () => { mapCentreeAutomatiquement = true; });
+        }
+
+        function unPopupEstOuvertActuellement() {
+            let ouvert = false;
+            if (mapInstance) {
+                mapInstance.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker && layer.getPopup() && layer.getPopup().isOpen()) {
+                        ouvert = true;
+                    }
+                });
+            }
+            return ouvert;
+        }
+
+        function updateMapMarkers() {
+            if (!markersGroup || !mapInstance) return;
+            if (unPopupEstOuvertActuellement()) return;
+
+            markersGroup.clearLayers(); 
+            dictMarqueursReferences = {}; 
+
+            let bounds = [];
+
+            listeBiens.forEach(bien => {
+                // APPLIQUE LE TRICIBLÉ DE TYPE ET STATUT SUR LA CARTE ÉGALEMENT
+                let matchStatut = false;
+                if (filtreStatutActuel === "Tous") matchStatut = true;
+                else if (filtreStatutActuel === "Prospectés") matchStatut = bien.prospectionFaite === true;
+                else if (filtreStatutActuel === "Actifs") matchStatut = (bien.statut === "Actifs" && bien.prospectionFaite === false);
+                else matchStatut = bien.statut === filtreStatutActuel;
+
+                const matchType = (filtreTypeActuel === "Tous" || bien.type === filtreTypeActuel);
+
+                if (!matchStatut || !matchType) return;
+
+                let coords = extraireCoordonneesDecimales(bien.gps);
+                if (!coords) return;
+
+                let codeCouleur = "#ef4444"; 
+                if (bien.statut === "Inactifs") codeCouleur = "#000000"; 
+                else if (bien.statut === "Mandats") codeCouleur = "#a855f7"; 
+                else if (bien.prospectionFaite) codeCouleur = "#22c55e"; 
+
+                let geoLoc = cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || { ville: (coords.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Cliquez pour voir" };
+
+                let markerIcon = L.divIcon({
+                    html: `<div style="background-color: ${codeCouleur}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                    className: '',
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                });
+
+                let cleanGpsStr = bien.gps.replace(/'/g, "\\'");
+                let popupHTML = `
+                    <div style="min-width: 190px;">
+                        <h4 style="font-weight: bold; color: #2c4c5e; margin-bottom: 4px; font-size: 13px;">${bien.nom}</h4>
+                        <div style="font-size: 11px; color: #4b5563; line-height: 1.4;">
+                            <div>⏱️ ${bien.dateAjout || '—'}</div>
+                            <div>📏 <strong>Surface :</strong> ${bien.surface || '—'} m²</div>
+                            <div>🧱 <strong>Pièces :</strong> ${bien.pieces || '—'}</div>
+                            <div>💰 <strong>Prix :</strong> ${bien.prix || '—'} €</div>
+                            <div>🏙️ <strong>Ville :</strong> ${geoLoc.ville}</div>
+                            <div style="margin-bottom: 6px;">📍 <strong>Rue :</strong> ${geoLoc.rue}</div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+                            <button onclick="ouvrirMaps('${cleanGpsStr}')" style="background-color: #1e3442; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; text-align:center; width:100%;">🗺️ Google Maps</button>
+                            ${bien.lien ? `<button onclick="window.open('${bien.lien}', '_blank')" style="background-color: #3b82f6; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; text-align:center; width:100%;">↗️ Annonce externe</button>` : ''}
+                            <button onclick="ancrerVersFiche(${bien.id})" style="background-color: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-top: 2px; text-align:center; width:100%;">🔍 Voir fiche & contact</button>
+                        </div>
+                    </div>
+                `;
+
+                let marker = L.marker([coords.lat, coords.lng], { icon: markerIcon }).bindPopup(popupHTML, {
+                    autoClose: false, 
+                    closeOnClick: false 
+                });
+                
+                marker.on('click', async () => {
+                    let freshLoc = await fetchLieuExactParGps(bien.gps);
+                    bien.villeCalcul = freshLoc.ville;
+                    bien.rueCalcul = freshLoc.rue;
+                    marker.setPopupContent(popupHTML.replace("Cliquez pour voir", freshLoc.rue));
+                });
+
+                markersGroup.addLayer(marker);
+                dictMarqueursReferences[bien.id] = marker; 
+                bounds.push([coords.lat, coords.lng]);
+            });
+
+            if (bounds.length > 0 && mapInstance && !mapCentreeAutomatiquement) {
+                mapInstance.fitBounds(bounds, { padding: [30, 30] });
+                mapCentreeAutomatiquement = true; 
+            }
+        }
+
+        window.ancrerVersFiche = function(id) {
+            const cardElement = document.getElementById(`card-${id}`);
+            if (cardElement) {
+                if (openCards[id] !== true) { toggleCollapse(id); }
+                cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                cardElement.classList.add('ring-4', 'ring-indigo-500');
+                setTimeout(() => cardElement.classList.remove('ring-4', 'ring-indigo-500'), 2000);
+            } else {
+                alert("Le bien n'apparaît pas dans la liste filtrée actuelle en bas. Modifiez vos filtres.");
+            }
+        };
+
+        window.declencherPopupMarqueurSurCarte = function(id) {
+            const sectionMap = document.getElementById('sectionMapContainer');
+            if (sectionMap) {
+                sectionMap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            const marker = dictMarqueursReferences[id];
+            if (marker && mapInstance) {
+                const coords = marker.getLatLng();
+                mapInstance.setView(coords, 16, { animate: true });
+                setTimeout(() => {
+                    marker.openPopup();
+                }, 400);
+            } else {
+                alert("La localisation de ce bien n'est pas chargée avec vos filtres de type actuels.");
+            }
+        };
+
+        window.ouvrirMaps = function(gpsString) {
+            if(!gpsString) return;
+            window.open(`https://maps.google.com/?q=${encodeURIComponent(gpsString)}`, '_blank');
+        };
+
+        window.editContact = function(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+
+            editIdInput.value = bien.id;
+            document.getElementById('nomBien').value = bien.nom || '';
+            document.getElementById('lienAnnonce').value = bien.lien || '';
+            document.getElementById('gps').value = bien.gps || '';
+            document.getElementById('typeBien').value = bien.type || 'Maison';
+            document.getElementById('surface').value = bien.surface === '—' ? '' : bien.surface;
+            document.getElementById('pieces').value = bien.pieces === '—' ? '' : bien.pieces;
+            document.getElementById('prix').value = bien.prix === '—' ? '' : bien.prix.replace(/\s/g, '');
+            document.getElementById('nomContact').value = bien.contactNom === 'Non renseigné' ? '' : bien.contactNom;
+            document.getElementById('prenomContact').value = bien.contactPrenom || '';
+            document.getElementById('telContact').value = bien.tel || '';
+            document.getElementById('emailContact').value = bien.email || '';
+
+            formTitle.innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-amber-500"></i> Modifier l'annonce / Fiche`;
+            submitBtn.innerText = "Enregistrer les modifications";
+            cancelEditBtn.classList.remove('hidden');
+
+            isFormOpen = true;
+            updateFormVisibility();
+
+            document.getElementById('toggleFormHeader').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (window.lucide) lucide.createIcons();
+        };
+
+        function updateFormVisibility() {
+            if (isFormOpen) {
+                formContent.style.display = "block";
+                formChevron.setAttribute('data-lucide', 'chevron-up');
+            } else {
+                formContent.style.display = "none";
+                formChevron.setAttribute('data-lucide', 'chevron-down');
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        toggleFormHeader.addEventListener('click', () => {
+            isFormOpen = !isFormOpen;
+            updateFormVisibility();
+        });
+
+        function extraireCoordonneesDecimales(gpsString) {
+            if (!gpsString) return null;
+            try {
+                const parts = gpsString.split(',');
+                if (parts.length === 2) {
+                    const lat = parseFloat(parts[0].trim());
+                    const lng = parseFloat(parts[1].trim());
+                    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+                }
+                const matches = gpsString.match(/([0-9.]+)/g);
+                if (matches && matches.length >= 2) {
+                    return { lat: parseFloat(matches[0]), lng: parseFloat(matches[1]) };
+                }
+            } catch(e) {}
+            return null;
+        }
+
+        function calculerDistancePoints(p1, p2) {
+            return Math.sqrt(Math.pow(p1.lat - p2.lat, 2) + Math.pow(p1.lng - p2.lng, 2));
+        }
+
+        async function fetchFromCloud() {
+            if (isSyncPaused) return; 
+            try {
+                const response = await fetch(`${FIREBASE_URL}/biens.json`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    listeBiens = data;
+                }
+                renderApp();
+            } catch (e) { console.error("Erreur Cloud :", e); }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const idValue = editIdInput.value;
+            const prixRaw = document.getElementById('prix').value.trim();
+            
+            let formatPrix = '—';
+            if (prixRaw) {
+                let cleanNum = Number(prixRaw.replace(/\s/g, '').replace('€', ''));
+                formatPrix = !isNaN(cleanNum) ? cleanNum.toLocaleString('fr-FR') : prixRaw;
+            }
+
+            let inputLien = (document.getElementById('lienAnnonce').value || '').trim();
+            if (inputLien && !inputLien.startsWith('http://') && !inputLien.startsWith('https://')) {
+                inputLien = 'https://' + inputLien;
+            }
+
+            if (idValue) {
+                const idx = listeBiens.findIndex(b => b.id == idValue);
+                if (idx !== -1) {
+                    listeBiens[idx].nom = document.getElementById('nomBien').value || 'Sans nom';
+                    listeBiens[idx].lien = inputLien;
+                    listeBiens[idx].gps = document.getElementById('gps').value || '';
+                    listeBiens[idx].type = document.getElementById('typeBien').value;
+                    listeBiens[idx].surface = document.getElementById('surface').value || '—';
+                    listeBiens[idx].pieces = document.getElementById('pieces').value || '—';
+                    listeBiens[idx].prix = formatPrix;
+                    listeBiens[idx].contactNom = document.getElementById('nomContact').value || 'Non renseigné';
+                    listeBiens[idx].contactPrenom = document.getElementById('prenomContact').value || '';
+                    listeBiens[idx].tel = document.getElementById('telContact').value || '';
+                    listeBiens[idx].email = document.getElementById('emailContact').value || '';
+                }
+                resetFormMode();
+            } else {
+                const nouveauBien = {
+                    id: Date.now(),
+                    nom: document.getElementById('nomBien').value || 'Sans nom',
+                    lien: inputLien,
+                    gps: document.getElementById('gps').value || '',
+                    type: document.getElementById('typeBien').value,
+                    surface: document.getElementById('surface').value || '—',
+                    pieces: document.getElementById('pieces').value || '—',
+                    prix: formatPrix,
+                    contactNom: document.getElementById('nomContact').value || 'Non renseigné',
+                    contactPrenom: document.getElementById('prenomContact').value || '',
+                    tel: document.getElementById('telContact').value || '',
+                    email: document.getElementById('emailContact').value || '',
+                    statut: "Inactifs",
+                    dateAjout: new Date().toLocaleDateString('fr-FR'),
+                    prospectionFaite: false,
+                    mandatSigne: false
+                };
+                listeBiens.unshift(nouveauBien);
+                form.reset();
+            }
+            await uploadToCloud();
+            renderApp();
+        });
+
+        function resetFormMode() {
+            editIdInput.value = "";
+            form.reset();
+            formTitle.innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-indigo-500"></i> Ajouter une nouvelle annonce`;
+            submitBtn.innerText = "Ajouter l'annonce";
+            cancelEditBtn.classList.add('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        cancelEditBtn.addEventListener('click', resetFormMode);
+
+        function parseCSVLine(text, sep) {
+            let arr = [];
+            let quote = false;
+            let col = "";
+            for (let i = 0; i < text.length; i++) {
+                let c = text[i];
+                if (c === '"') { quote = !quote; }
+                else if (c === sep && !quote) { arr.push(col.trim()); col = ""; }
+                else { col += c; }
+            }
+            arr.push(col.trim());
+            return arr;
+        }
+
+        csvFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                const text = evt.target.result;
+                const lines = text.split(/\r?\n/);
+                if (lines.length < 2) { alert("Le fichier semble vide."); return; }
+
+                isSyncPaused = true; 
+                const separator = lines[0].includes(';') ? ';' : ',';
+                const firstLine = lines[0].replace(/^\uFEFF/, '').trim();
+                const headers = parseCSVLine(firstLine, separator);
+                
+                let countImported = 0;
+                let compteurType = { Maison: 0, Appartement: 0, Terrain: 0, Autre: 0 };
+
+                listeBiens = [];
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    
+                    const columns = parseCSVLine(lines[i], separator);
+                    if (columns.length === 0 || columns.every(c => c === '')) continue;
+
+                    let bienObj = {
+                        id: Date.now() + i,
+                        nom: '', lien: '', gps: '', type: 'Maison', 
+                        surface: '—', pieces: '—', prix: '—', 
+                        contactNom: 'Non renseigné', contactPrenom: '', tel: '', email: '',
+                        statut: "Inactifs", dateAjout: new Date().toLocaleDateString('fr-FR'),
+                        prospectionFaite: false, mandatSigne: false
+                    };
+
+                    headers.forEach((header, idx) => {
+                        let val = columns[idx];
+                        if (val !== undefined && val !== null && val !== '') {
+                            let normHeader = header.toLowerCase().replace(/\s/g, '');
+                            if (normHeader === 'annonce' || normHeader.includes('lien') || normHeader.includes('url')) {
+                                let rawUrl = val.trim();
+                                if (rawUrl && !rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) { rawUrl = 'https://' + rawUrl; }
+                                bienObj.lien = rawUrl;
+                            }
+                            if (normHeader.includes('gps')) bienObj.gps = val;
+                            if (normHeader.includes('date')) bienObj.dateAjout = val;
+                            if (normHeader.includes('type')) {
+                                let vLower = val.toLowerCase();
+                                if(vLower.includes('maison') || vLower.includes('villa')) bienObj.type = 'Maison';
+                                else if(vLower.includes('appart') || vLower.includes('studio')) bienObj.type = 'Appartement';
+                                else if(vLower.includes('terrain')) bienObj.type = 'Terrain';
+                                else bienObj.type = 'Autre';
+                            }
+                            if (normHeader === 'm²' || normHeader.includes('surface')) bienObj.surface = val;
+                            if (normHeader.includes('pièce')) bienObj.pieces = val;
+                            if (normHeader === 'prix') {
+                                let num = Number(val.replace(/\s/g, '').replace('€', '').replace(' ', ''));
+                                bienObj.prix = !isNaN(num) && num > 0 ? num.toLocaleString('fr-FR') : val;
+                            }
+                            if (normHeader.includes('téléphone') || normHeader === 'tel') bienObj.tel = val;
+                            if (normHeader.includes('mail')) bienObj.email = val;
+                            if (normHeader.includes('prospect') && (val.toLowerCase().includes('oui') || val.toLowerCase().includes('fait') || val === '1')) { bienObj.prospectionFaite = true; }
+                            if (normHeader.includes('mandat') && (val.toLowerCase().includes('oui') || val.toLowerCase().includes('sign') || val === '1')) { bienObj.mandatSigne = true; bienObj.statut = "Mandats"; }
+                            if (normHeader.includes('nompr')) {
+                                let espaceIdx = val.indexOf(' ');
+                                if (espaceIdx !== -1) { bienObj.contactPrenom = val.substring(0, espaceIdx); bienObj.contactNom = val.substring(espaceIdx + 1); } 
+                                else { bienObj.contactNom = val; }
+                            }
+                        }
+                    });
+
+                    compteurType[bienObj.type]++;
+                    bienObj.nom = `${bienObj.type} ${compteurType[bienObj.type]}`;
+                    listeBiens.push(bienObj);
+                    countImported++;
+                }
+
+                if (countImported > 0) {
+                    renderApp(); 
+                    await uploadToCloud(); 
+                    setTimeout(() => { isSyncPaused = false; }, 10000); 
+                    alert(`Succès ! ${countImported} fiches proprement chargées.`);
+                    csvFileInput.value = "";
+                } else {
+                    isSyncPaused = false;
+                    alert("Erreur de chargement.");
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        btnExportCSV.addEventListener('click', () => {
+            if (listeBiens.length === 0) {
+                alert("Aucune donnée disponible pour l'export.");
+                return;
+            }
+
+            let csvContent = "sep=;\n"; 
+            csvContent += "Nom du bien;Date de l'annonce;Coordonnées GPS;Ville;Rue;Type de bien;M²;Pièces;Prix;Statut;Prospection réalisée;Mandat signé;Nom Contact;Prénom Contact;Téléphone;E-mail;Lien de l'annonce\n";
+
+            listeBiens.forEach(b => {
+                let coords = extraireCoordonneesDecimales(b.gps);
+                let loc = coords ? (cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || { ville: (coords.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Non décodée" }) : { ville: "Cannes", rue: "Inconnue" };
+                let prixNettoye = b.prix ? b.prix.replace(/[\s\u202f\u00a0]/g, '') : '—';
+                
+                let row = [
+                    `"${(b.nom || '').replace(/"/g, '""').replace(/;/g, ',')}"`,
+                    `"${(b.dateAjout || '')}"`,
+                    `"${(b.gps || '')}"`,
+                    `"${(loc.ville || '')}"`,
+                    `"${(loc.rue || '').replace(/"/g, '""').replace(/;/g, ',')}"`,
+                    `"${(b.type || 'Maison')}"`,
+                    `"${(b.surface || '—')}"`,
+                    `"${(b.pieces || '—')}"`,
+                    `"${prixNettoye}"`, 
+                    `"${(b.statut || 'Inactifs')}"`,
+                    `"${b.prospectionFaite ? 'Oui' : 'Non'}"`,
+                    `"${b.mandatSigne ? 'Oui' : 'Non'}"`,
+                    `"${(b.contactNom || 'Non renseigné').replace(/"/g, '""').replace(/;/g, ',')}"`,
+                    `"${(b.contactPrenom || '').replace(/"/g, '""').replace(/;/g, ',')}"`,
+                    `"${(b.tel || '')}"`,
+                    `"${(b.email || '')}"`,
+                    `"${(b.lien || '')}"`
+                ];
+                csvContent += row.join(";") + "\n";
+            });
+
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Export_Prospection_MyMaps_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        async function toggleActifInactif(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+            bien.statut = (bien.statut === "Actifs") ? "Inactifs" : "Actifs";
+            if (bien.statut !== "Mandats") bien.mandatSigne = false;
+            await uploadToCloud();
+            renderApp();
+        }
+
+        async function toggleProspectionDirecte(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+            bien.prospectionFaite = !bien.prospectionFaite;
+            await uploadToCloud();
+            renderApp();
+        }
+
+        async function updateBienCheckboxes(id) {
+            const bien = listeBiens.find(b => b.id == id);
+            if (!bien) return;
+            bien.mandatSigne = document.getElementById(`mandat-${id}`).checked;
+            bien.statut = bien.mandatSigne ? "Mandats" : "Inactifs";
+            await uploadToCloud();
+            renderApp();
+        }
+
+        function toggleCollapse(id) { openCards[id] = !openCards[id]; sessionStorage.setItem('openCards', JSON.stringify(openCards)); renderApp(); }
+        async function supprimerBien(id) { if(confirm("Supprimer définitivement ce bien ?")) { listeBiens = listeBiens.filter(b => b.id !== id); delete openCards[id]; await uploadToCloud(); renderApp(); } }
+        
+        function trierParTrajetProche(arr) {
+            if (arr.length <= 1) return arr;
+            const listeResultat = [];
+            const copieBiens = [...arr];
+            let current = copieBiens.shift();
+            listeResultat.push(current);
+            
+            while (copieBiens.length > 0) {
+                let currentCoords = extraireCoordonneesDecimales(current.gps);
+                let plusProcheIdx = 0;
+                let distanceMin = Infinity;
+                if (currentCoords) {
+                    for (let i = 0; i < copieBiens.length; i++) {
+                        let targetCoords = extraireCoordonneesDecimales(copieBiens[i].gps);
+                        if (targetCoords) {
+                            let dist = calculerDistancePoints(currentCoords, targetCoords);
+                            if (dist < distanceMin) { distanceMin = dist; plusProcheIdx = i; }
+                        }
+                    }
+                }
+                current = copieBiens.splice(plusProcheIdx, 1)[0];
+                listeResultat.push(current);
+            }
+            return listeResultat;
+        }
+
+        function convertirPrixNumerique(prixStr) {
+            if (!prixStr) return 0;
+            const num = Number(prixStr.replace(/\s/g, '').replace('€', '').replace(' ', ''));
+            return isNaN(num) ? 0 : num;
+        }
+
+        function renderCountersAndTabs() {
+            const cs = { Tous: listeBiens.length, Actifs: 0, Inactifs: 0, Prospectés: 0, Mandats: 0 };
+            const ct = { Tous: listeBiens.length, Maison: 0, Appartement: 0, Terrain: 0, Autre: 0 };
+            
+            listeBiens.forEach(b => { 
+                if (b.statut === "Inactifs") cs.Inactifs++;
+                if (b.statut === "Mandats") cs.Mandats++;
+                
+                if (b.prospectionFaite) cs.Prospectés++; 
+                else if (b.statut === "Actifs") cs.Actifs++; // "À faire" comprend : Actif ET non prospecté uniquement
+
+                if(ct[b.type] !== undefined) ct[b.type]++; 
+            });
+
+            document.getElementById('count-total').innerText = cs.Tous;
+            document.getElementById('count-actifs').innerText = cs.Actifs;
+            document.getElementById('count-inactifs').innerText = cs.Inactifs;
+            document.getElementById('count-prospectes').innerText = cs.Prospectés;
+            document.getElementById('count-mandats').innerText = cs.Mandats;
+
+            // RENDU VISUEL DES ONGLETS COMPTEURS SÉLECTIONNÉS
+            const statutsAssocies = ["Tous", "Actifs", "Inactifs", "Prospectés", "Mandats"];
+            statutsAssocies.forEach(s => {
+                const el = document.getElementById(`card-filter-${s}`);
+                if (el) {
+                    if (s === filtreStatutActuel) {
+                        el.className = "bg-[#2c4c5e] text-white p-4 rounded-xl border border-[#2c4c5e] cursor-pointer transition-all shadow-md scale-[1.02]";
+                        el.querySelector('span:first-child').className = "block text-2xl font-bold text-white";
+                        el.querySelector('span:last-child').className = "text-xs font-semibold text-slate-200 uppercase";
+                    } else {
+                        el.className = "bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs";
+                        let clr = "text-gray-800";
+                        if (s === "Actifs") clr = "text-emerald-600";
+                        if (s === "Inactifs") clr = "text-rose-500";
+                        if (s === "Prospectés") clr = "text-amber-500";
+                        if (s === "Mandats") clr = "text-indigo-600";
+                        el.querySelector('span:first-child').className = `block text-2xl font-bold ${clr}`;
+                        el.querySelector('span:last-child').className = "text-xs font-semibold text-gray-400 uppercase";
+                    }
+                }
+            });
+
+            document.querySelectorAll('.tab-type-btn').forEach(btn => {
+                const t = btn.getAttribute('data-filter-type');
+                let lbl = t === 'Tous' ? 'Tous les types' : t + 's';
+                btn.innerText = `${lbl} (${ct[t]})`;
+                if(t === filtreTypeActuel) {
+                    btn.className = "tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md bg-[#2c4c5e] text-white cursor-pointer select-none";
+                } else {
+                    btn.className = "tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md bg-white text-gray-600 border cursor-pointer hover:bg-gray-50 select-none";
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // BRANCHEMENT DES COMPTEURS EN TANT QUE NOUVEAUX FILTRES DE STATUT
+            const statutsAssocies = ["Tous", "Actifs", "Inactifs", "Prospectés", "Mandats"];
+            statutsAssocies.forEach(s => {
+                const el = document.getElementById(`card-filter-${s}`);
+                if (el) {
+                    el.onclick = () => {
+                        filtreStatutActuel = s;
+                        renderApp();
+                    };
+                }
+            });
+
+            document.querySelectorAll('.tab-type-btn').forEach(btn => {
+                btn.onclick = () => {
+                    filtreTypeActuel = btn.getAttribute('data-filter-type');
+                    // FORCE AUSSI LE RE-RENDU ET LE FILTRAGE DES MARQUEURS SUR LA CARTE
+                    mapCentreeAutomatiquement = false; 
+                    renderApp();
+                };
+            });
+        });
+
+        triSelect.onchange = (e) => { triActuel = e.target.value; renderApp(); };
+
+        function renderApp() {
+            renderCountersAndTabs();
+            annoncesContainer.innerHTML = '';
+            
+            let bf = listeBiens.filter(b => {
+                let matchStatut = false;
+                if (filtreStatutActuel === "Tous") matchStatut = true;
+                else if (filtreStatutActuel === "Prospectés") matchStatut = b.prospectionFaite === true;
+                else if (filtreStatutActuel === "Actifs") matchStatut = (b.statut === "Actifs" && b.prospectionFaite === false); // Notion "À faire"
+                else matchStatut = b.statut === filtreStatutActuel;
+
+                const matchType = (filtreTypeActuel === "Tous" || b.type === filtreTypeActuel);
+                return matchStatut && matchType;
+            });
+
+            if (listeBiens.length > 0) {
+                initMap();
+                updateMapMarkers();
+            }
+
+            if (triActuel === "date-desc") { bf.sort((a, b) => b.id - a.id); } 
+            else if (triActuel === "date-asc") { bf.sort((a, b) => a.id - b.id); } 
+            else if (triActuel === "prix-asc") { bf.sort((a, b) => convertirPrixNumerique(a.prix) - convertirPrixNumerique(b.prix)); } 
+            else if (triActuel === "prix-desc") { bf.sort((a, b) => convertirPrixNumerique(b.prix) - convertirPrixNumerique(a.prix)); } 
+            else if (triActuel === "trajet") { bf = trierParTrajetProche(bf); }
+
+            if(bf.length === 0) {
+                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien trouvé correspondant à ces filtres.</div>`;
+                return;
+            }
+
+            bf.forEach(bien => {
+                let bc = "bg-rose-50 text-rose-600 border border-rose-200";
+                if (bien.statut === "Mandats") bc = "bg-indigo-50 text-indigo-600 border border-indigo-200";
+                if (bien.statut === "Actifs") bc = "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                
+                let prospClass = bien.prospectionFaite ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-rose-50 text-rose-600 border border-rose-200";
+                let prospText = bien.prospectionFaite ? "✅ FAIT" : "❌ À FAIRE";
+
+                let coords = extraireCoordonneesDecimales(bien.gps);
+                let geoLoc = coords ? (cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || { ville: (coords.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Chargement en cours..." }) : { ville: "Cannes", rue: "Axe GPS" };
+                const classBadgeUnique = "text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md font-bold";
+
+                const isExpanded = !!openCards[bien.id];
+                const card = document.createElement('div');
+                card.id = `card-${bien.id}`; 
+                card.className = "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300";
+                card.innerHTML = `
+                    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="cursor-pointer flex-1" onclick="toggleCollapse(${bien.id})">
+                            <h3 class="text-lg font-bold text-gray-800">${bien.nom}</h3>
+                            <div class="text-xs mt-1.5 flex flex-wrap gap-2">
+                                <span class="${classBadgeUnique}">${bien.dateAjout}</span>
+                                <span class="${classBadgeUnique}">${bien.surface} m²</span>
+                                <span class="${classBadgeUnique}">${bien.pieces || '—'} pièces</span>
+                                <span class="${classBadgeUnique}">${bien.prix} €</span>
+                                <span class="${classBadgeUnique}">Ville : ${geoLoc.ville}</span>
+                                <span class="${classBadgeUnique}">Rue : ${geoLoc.rue}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="toggleProspectionDirecte(${bien.id})" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${prospClass}">
+                                ${prospText}
+                            </button>
+                            <button id="badge-${bien.id}" onclick="toggleActifInactif(${bien.id})" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md cursor-pointer transition-transform active:scale-95 ${bc}">${bien.statut === 'Mandats' ? 'Mandat' : bien.statut.slice(0, -1)}</button>
+                            <button onclick="toggleCollapse(${bien.id})" class="text-gray-400 cursor-pointer"><i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                    <div class="${isExpanded ? 'block' : 'hidden'} p-5 space-y-4 bg-gray-50/50 border-t">
+                        <div class="bg-white border rounded-xl p-4 max-w-md shadow-2xs space-y-2 relative">
+                            <button onclick="declencherPopupMarqueurSurCarte(${bien.id})" class="absolute top-3 right-3 bg-sky-50 text-sky-600 hover:bg-sky-100 border border-sky-200 font-bold text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1 cursor-pointer transition-colors" title="Localiser sur la carte">
+                                🗺️ Localiser
+                            </button>
+                            <div class="text-xs font-semibold text-slate-500 flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> Contact associé</div>
+                            <div class="text-sm font-bold text-gray-800 pr-20">${bien.contactPrenom || ''} ${bien.contactNom || ''}</div>
+                            ${bien.tel ? `<div class="text-xs text-slate-600 flex items-center gap-1.5">📱 <strong>Tél:</strong> <a href="tel:${bien.tel}" class="text-sky-600 hover:underline">${bien.tel}</a></div>` : ''}
+                            ${bien.email ? `<div class="text-xs text-slate-600 flex items-center gap-1.5">✉️ <strong>Email:</strong> <a href="mailto:${bien.email}" class="text-sky-600 hover:underline">${bien.email}</a></div>` : ''}
+                            <button onclick="editContact(${bien.id})" class="mt-2 text-xs bg-indigo-50 text-indigo-600 font-semibold px-3 py-1.5 rounded-md border border-indigo-200 cursor-pointer hover:bg-indigo-100 flex items-center gap-1">✏️ Modifier la fiche / contact</button>
+                        </div>
+                        <div class="bg-white border rounded-xl p-4 flex flex-wrap gap-6 items-center shadow-2xs">
+                            <label class="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                                <input type="checkbox" id="mandat-${bien.id}" ${bien.mandatSigne ? 'checked' : ''} onchange="updateBienCheckboxes(${bien.id})" class="w-4 h-4 text-indigo-600 rounded border-gray-300"> 📝 Mandat signé
+                            </label>
+                        </div>
+                        <button onclick="ouvrirMaps('${bien.gps.replace(/'/g, "\\'")}')" class="w-full bg-[#1e3442] hover:bg-[#14232c] text-white text-xs font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer">🗺️ Ouvrir sur Google Maps</button>
+                        <div class="space-y-2">
+                            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Liens sources :</div>
+                            <div class="bg-white border rounded-xl p-4 flex items-center justify-between shadow-2xs">
+                                ${bien.lien ? `<a href="${bien.lien}" target="_blank" class="text-xs text-sky-600 font-semibold hover:underline">Ouvrir l'annonce externe ↗</a>` : '<span class="text-xs text-gray-400 italic">Aucun lien enregistré</span>'}
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t flex justify-center">
+                            <button onclick="supprimerBien(${bien.id})" class="text-xs font-medium text-rose-500 hover:underline cursor-pointer">Supprimer définitivement cette fiche</button>
+                        </div>
+                    </div>
+                `;
+                annoncesContainer.appendChild(card);
+                
+                if (coords && (!cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`].rue === "Chargement en cours...")) {
+                    fetchLieuExactParGps(bien.gps).then(() => {
+                        let badgeVille = card.querySelector('.mt-1.5').children[4];
+                        let badgeRue = card.querySelector('.mt-1.5').children[5];
+                        let infoGeo = cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`];
+                        if (badgeVille && badgeRue && infoGeo) {
+                            badgeVille.innerText = `Ville : ${infoGeo.ville}`;
+                            badgeRue.innerText = `Rue : ${infoGeo.rue}`;
+                        }
+                    });
+                }
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        fetchFromCloud();
+        setInterval(fetchFromCloud, 4000);
+    </script>
+</body>
+</html>
