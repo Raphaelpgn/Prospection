@@ -235,10 +235,21 @@
             </div>
         </section>
 
-        <!-- ZONE DE COMMANDE DE LA LISTE DES BIENS (RAFALE EXPRESS) -->
-        <section class="flex justify-between items-center bg-slate-100 p-3 rounded-xl border border-gray-200">
-            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">📋 Liste des Dossiers Prospectés</span>
-            <button onclick="declencherRafaleExpress()" class="bg-[#2c4c5e] hover:bg-[#1f3744] text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm flex items-center gap-2 transition-transform active:scale-95 cursor-pointer">
+        <!-- ZONE DE COMMANDE DE LA LISTE DES BIENS (RECHERCHE URL + RAFALE) -->
+        <section class="flex flex-col md:flex-row justify-between items-center bg-slate-100 p-3 rounded-xl border border-gray-200 gap-3">
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <span class="text-xs font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap">📋 LISTE DES DOSSIERS</span>
+            </div>
+            
+            <!-- MODULE INTERACTIF : RECHERCHE PAR URL DIRECTE -->
+            <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-md">
+                <input type="url" id="searchUrlInput" placeholder="Coller l'URL de l'annonce à retrouver..." class="w-full bg-white px-3 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#2c4c5e]">
+                <button onclick="rechercherFicheParUrlDirecte()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shadow-xs">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i> Rechercher
+                </button>
+            </div>
+
+            <button onclick="declencherRafaleExpress()" class="bg-[#2c4c5e] hover:bg-[#1f3744] text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm flex items-center gap-2 transition-transform active:scale-95 cursor-pointer w-full md:w-auto justify-center">
                 <i data-lucide="zap" class="w-4 h-4 text-amber-400 fill-amber-400"></i> 🚀 Lancer Rafale Express (5 biens)
             </button>
         </section>
@@ -392,7 +403,6 @@
             renderApp();
         };
 
-        // FONCTION CRITIQUE : CALCUL DU NOMBRE DE JOURS ÉCOULÉS POUR LE SUIVI CHRONOLOGIQUE
         function calculerJoursEcoules(dateStr) {
             if (!dateStr) return 0;
             try {
@@ -405,23 +415,19 @@
             } catch(e) { return 0; }
         }
 
-        // FONCTION DE ROUTAGE : LE MOTEUR DE LA RAFALE EXPRESS CIRCULAIRE
         window.declencherRafaleExpress = function() {
-            // Étape 1 : Isoler exclusivement les biens du filtre "À Faire" triés du plus ancien au plus récent
             let biensAFaire = listeBiens.filter(b => b.statut === "Actifs" && b.prospectionFaite === false);
-            biensAFaire.sort((a, b) => a.id - b.id); // Tri chronologique de stockage
+            biensAFaire.sort((a, b) => a.id - b.id); 
 
             if (biensAFaire.length === 0) {
                 alert("Aucun bien actif n'est présent dans votre dossier 'À Faire' actuellement.");
                 return;
             }
 
-            // Étape 2 : Boucler si l'index de départ dépasse la taille du tableau actuel
             if (indexDebutRafale >= biensAFaire.length) {
                 indexDebutRafale = 0;
             }
 
-            // Étape 3 : Extraire la séquence de 5 biens
             let selectionSelectionnee = biensAFaire.slice(indexDebutRafale, indexDebutRafale + 5);
             let urlsOuvertes = 0;
 
@@ -433,12 +439,64 @@
             });
 
             if (urlsOuvertes > 0) {
-                // Décalage de l'index pour le prochain clic de rafale
                 indexDebutRafale += 5;
-                if (indexDebutRafale >= biensAFaire.length) indexDebutRafale = 0; // Sécurité de rotation boucle
+                if (indexDebutRafale >= biensAFaire.length) indexDebutRafale = 0; 
             } else {
                 alert("Les 5 biens ciblés dans cette tranche n'ont pas de lien URL configuré.");
             }
+        };
+
+        // 💥 FONCTION ULTRA-CIBLÉE : RECHERCHE PAR URL AVEC REDIRECTION ET SCROLL DIRECT IMMÉDIAT (1ER CLIC)
+        window.rechercherFicheParUrlDirecte = function() {
+            const urlSaisie = document.getElementById('searchUrlInput').value.trim();
+            if (!urlSaisie) {
+                alert("Veuillez d'abord coller un lien URL valide dans la case de recherche.");
+                return;
+            }
+
+            // Normalisation de l'URL pour éviter les loupés de paramètres (ex: enlever les / finaux ou les espaces)
+            const urlSaisiePropre = urlSaisie.toLowerCase().replace(/\/$/, "");
+
+            // Recherche du bien correspondant dans la base complète
+            const bienTrouve = listeBiens.find(b => b.lien && b.lien.toLowerCase().replace(/\/$/, "") === urlSaisiePropre);
+
+            if (!bienTrouve) {
+                alert("Aucune fiche de votre CRM ne correspond à ce lien URL. Vérifiez l'adresse ou importez-la.");
+                return;
+            }
+
+            // 🌟 BLINDAGE DU PREMIER CLIC : On désactive TOUS les filtres pour forcer l'élément à exister dans le DOM
+            filtreStatutActuel = "Tous";
+            filtreTypeActuel = "Tous";
+            vBudgetMin = ""; vBudgetMax = "";
+            vSurfaceMin = ""; vSurfaceMax = "";
+            vPiecesChoisies = [];
+            
+            // Nettoyage visuel des labels de filtres
+            document.getElementById('labelBudget').innerText = "💰 Budget (€)";
+            document.getElementById('labelSurface').innerText = "📏 Surface (m²)";
+            document.getElementById('labelPieces').innerText = "🧱 Pièces";
+            document.getElementById('fBudgetMin').value = ""; document.getElementById('fBudgetMax').value = "";
+            document.getElementById('fSurfaceMin').value = ""; document.getElementById('fSurfaceMax').value = "";
+            document.querySelectorAll('.chk-piece').forEach(c => c.checked = false);
+
+            // Force l'ouverture du volet de la carte d'annonce trouvée
+            openCards[bienTrouve.id] = true;
+            sessionStorage.setItem('openCards', JSON.stringify(openCards));
+
+            // On reconstruit l'application de façon synchrone immédiatement
+            renderApp();
+
+            // On laisse 150 millisecondes au DOM pour se dessiner et on balance le scroll d'ancrage parfait
+            setTimeout(() => {
+                const cardElement = document.getElementById(`card-${bienTrouve.id}`);
+                if (cardElement) {
+                    cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    cardElement.classList.add('ring-4', 'ring-amber-500');
+                    setTimeout(() => cardElement.classList.remove('ring-4', 'ring-amber-500'), 2500);
+                    document.getElementById('searchUrlInput').value = ""; // Vide le champ après succès
+                }
+            }, 150);
         };
 
         function validerFiltrageGlobalDuBien(bien) {
@@ -708,7 +766,7 @@
                     email: document.getElementById('emailContact').value || '',
                     statut: "Inactifs",
                     dateAjout: new Date().toLocaleDateString('fr-FR'),
-                    dateProspection: '', // Devient alimenté à l'action d'appel de pige
+                    dateProspection: '', 
                     prospectionFaite: false,
                     mandatSigne: false
                 };
@@ -895,14 +953,13 @@
             renderApp();
         }
 
-        // MISE À JOUR : ENREGISTREMENT AUTOMATIQUE DE LA DATE DE PROSPECTION LORS DU PASSAGE À "FAIT"
         async function toggleProspectionDirecte(id) {
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
             bien.prospectionFaite = !bien.prospectionFaite;
             
             if (bien.prospectionFaite) {
-                bien.dateProspection = new Date().toLocaleDateString('fr-FR'); // Tag horodatage de pige
+                bien.dateProspection = new Date().toLocaleDateString('fr-FR'); 
             } else {
                 bien.dateProspection = '';
             }
@@ -1065,7 +1122,6 @@
                 let geoLoc = coords ? (cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || { ville: (coords.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Chargement..." }) : { ville: "Cannes", rue: "Axe GPS" };
                 const classBadgeUnique = "text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md font-bold";
 
-                // 📐 ETAPE A : CALCULS AUTOMATIQUES DU PRIX AU M² & SÉCURITÉ DE MARCHÉ
                 let surfaceNum = parseFloat(bien.surface);
                 let prixNum = convertirPrixNumerique(bien.prix);
                 let chainePrixMetreCarre = "—";
@@ -1075,7 +1131,6 @@
                     let pxM2 = Math.round(prixNum / surfaceNum);
                     chainePrixMetreCarre = pxM2.toLocaleString('fr-FR') + " € / m²";
                     
-                    // Détection automatique de la ville pour comparaison
                     let nomVilleBase = geoLoc.ville.toLowerCase();
                     let cibleMoyenne = nomVilleBase.includes("cannet") ? MOYENNE_SECTEUR["le cannet"] : MOYENNE_SECTEUR["cannes"];
                     let ecartPourcent = Math.round(((pxM2 - cibleMoyenne) / cibleMoyenne) * 100);
@@ -1087,20 +1142,17 @@
                     }
                 }
 
-                // ⏱️ ETAPE B : MODULE CRITICAL ALERTE RAPPEL DE PIGE (30 JOURS)
                 let dateReferenceCalcul = bien.dateProspection ? bien.dateProspection : bien.dateAjout;
                 let joursEcoules = calculerJoursEcoules(dateReferenceCalcul);
                 
-                // Détection de l'état d'inactivité du dossier (Bordure Orange d'Alerte)
                 let borderAlerteClass = "border-gray-200 shadow-sm";
                 let badgeAlertePigeHTML = "";
                 
                 if (joursEcoules >= 30 && (bien.statut === "Actifs" || bien.prospectionFaite)) {
-                    borderAlerteClass = "border-amber-500 border-2 shadow-md animate-pulse-slow";
+                    borderAlerteClass = "border-amber-500 border-2 shadow-md";
                     badgeAlertePigeHTML = `<span class="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> RELANCE DE PIGE</span>`;
                 }
 
-                // Affichage du badge de temps dynamique
                 let chaineTempsProspectionHTML = "";
                 if (bien.prospectionFaite && bien.dateProspection) {
                     chaineTempsProspectionHTML = `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">📋 Prospecté le ${bien.dateProspection} (+${joursEcoules} jours)</span>`;
