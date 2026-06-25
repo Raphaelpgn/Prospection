@@ -139,7 +139,7 @@
             <div id="card-filter-Mandats" class="bg-white p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-xs transition-colors"><span id="count-mandats" class="block text-2xl font-bold text-indigo-600">0</span><span class="text-xs font-semibold text-gray-400 uppercase">Mandats</span></div>
         </section>
 
-        <!-- FILTRAGES PAR TYPE ET TRIS (Ligne statut supprimée) -->
+        <!-- FILTRAGES PAR TYPE ET TRIS -->
         <section class="bg-white p-4 rounded-xl border border-gray-100 space-y-4">
             <div class="flex flex-col gap-2">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtrer par Type :</span>
@@ -151,6 +151,7 @@
                     <button data-filter-type="Autre" class="tab-type-btn px-4 py-1.5 text-xs font-medium rounded-md cursor-pointer">Autres</button>
                 </nav>
             </div>
+            
             <div class="flex flex-col gap-2 pt-2 border-t border-gray-100">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">🚀 Organiser l'ordre d'affichage (Haut en Bas) :</span>
                 <div class="flex flex-wrap gap-2">
@@ -163,6 +164,83 @@
                     </select>
                 </div>
             </div>
+
+            <!-- SELECTION DE FILTRES AVANCÉS ET CUMULABLES -->
+            <div class="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">🔍 Affiner la recherche (Filtres cumulables) :</span>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
+                    
+                    <!-- FILTRE BUDGET -->
+                    <div class="relative drop-filter-container">
+                        <button onclick="toggleDropFilter('dropBudget')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
+                            <span id="labelBudget">💰 Budget (€)</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        </button>
+                        <div id="dropBudget" class="hidden absolute left-0 top-full mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-3 z-50">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 font-bold uppercase">À partir de</label>
+                                    <input type="number" id="fBudgetMin" placeholder="Min" class="w-full border rounded p-1.5 text-xs focus:outline-none focus:border-[#2c4c5e]">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 font-bold uppercase">Jusqu'à</label>
+                                    <input type="number" id="fBudgetMax" placeholder="Max" class="w-full border rounded p-1.5 text-xs focus:outline-none focus:border-[#2c4c5e]">
+                                </div>
+                            </div>
+                            <button onclick="appliquerFiltresAvances()" class="w-full bg-[#2c4c5e] text-white text-[11px] font-bold py-1.5 rounded cursor-pointer">Appliquer</button>
+                        </div>
+                    </div>
+
+                    <!-- FILTRE SURFACE -->
+                    <div class="relative drop-filter-container">
+                        <button onclick="toggleDropFilter('dropSurface')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
+                            <span id="labelSurface">📏 Surface (m²)</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        </button>
+                        <div id="dropSurface" class="hidden absolute left-0 top-full mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-3 z-50">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 font-bold uppercase">À partir de</label>
+                                    <input type="number" id="fSurfaceMin" placeholder="Min" class="w-full border rounded p-1.5 text-xs focus:outline-none focus:border-[#2c4c5e]">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 font-bold uppercase">Jusqu'à</label>
+                                    <input type="number" id="fSurfaceMax" placeholder="Max" class="w-full border rounded p-1.5 text-xs focus:outline-none focus:border-[#2c4c5e]">
+                                </div>
+                            </div>
+                            <button onclick="appliquerFiltresAvances()" class="w-full bg-[#2c4c5e] text-white text-[11px] font-bold py-1.5 rounded cursor-pointer">Appliquer</button>
+                        </div>
+                    </div>
+
+                    <!-- FILTRE PIÈCES -->
+                    <div class="relative drop-filter-container">
+                        <button onclick="toggleDropFilter('dropPieces')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
+                            <span id="labelPieces">🧱 Pièces</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        </button>
+                        <div id="dropPieces" class="hidden absolute right-0 top-full mt-1 w-full sm:w-56 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-2 z-50 max-h-60 overflow-y-auto">
+                            <span class="block text-[10px] text-gray-400 font-bold uppercase mb-1">Nombre de pièces :</span>
+                            <div class="space-y-1.5 text-xs text-gray-700">
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="1" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 1 pièce</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="2" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 2 pièces</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="3" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 3 pièces</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="4" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 4 pièces</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="5" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 5 pièces ou +</label>
+                            </div>
+                            <button onclick="appliquerFiltresAvances()" class="w-full mt-2 bg-[#2c4c5e] text-white text-[11px] font-bold py-1.5 rounded cursor-pointer">Filtrer</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ZONE DE COMMANDE DE LA LISTE DES BIENS (RAFALE EXPRESS) -->
+        <section class="flex justify-between items-center bg-slate-100 p-3 rounded-xl border border-gray-200">
+            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">📋 Liste des Dossiers Prospectés</span>
+            <button onclick="declencherRafaleExpress()" class="bg-[#2c4c5e] hover:bg-[#1f3744] text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm flex items-center gap-2 transition-transform active:scale-95 cursor-pointer">
+                <i data-lucide="zap" class="w-4 h-4 text-amber-400 fill-amber-400"></i> 🚀 Lancer Rafale Express (5 biens)
+            </button>
         </section>
 
         <!-- LISTE DES BIENS -->
@@ -180,11 +258,25 @@
         let openCards = JSON.parse(sessionStorage.getItem('openCards')) || {};
         let isSyncPaused = false; 
         let isFormOpen = false; 
+
+        // CRITÈRES DES FILTRES CUMULABLES
+        let vBudgetMin = "", vBudgetMax = "";
+        let vSurfaceMin = "", vSurfaceMax = "";
+        let vPiecesChoisies = [];
+
+        // INDEX DE ROTATION POUR LA RAFALE EXPRESS CIRCULAIRE
+        let indexDebutRafale = 0;
         
         let mapInstance = null;
         let markersGroup = null;
         let mapCentreeAutomatiquement = false; 
         let dictMarqueursReferences = {}; 
+
+        // VALEURS MOYENNES DU MARCHÉ ESTIMÉ POUR LES ALERTES PRIX AU M²
+        const MOYENNE_SECTEUR = {
+            "cannes": 10500,
+            "le cannet": 7300
+        };
 
         const form = document.getElementById('annonceForm');
         const annoncesContainer = document.getElementById('annoncesList');
@@ -261,6 +353,130 @@
             return ouvert;
         }
 
+        window.toggleDropFilter = function(id) {
+            const dropdowns = ['dropBudget', 'dropSurface', 'dropPieces'];
+            dropdowns.forEach(d => {
+                const target = document.getElementById(d);
+                if (d === id) target.classList.toggle('hidden');
+                else target.classList.add('hidden');
+            });
+        };
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.drop-filter-container')) {
+                ['dropBudget', 'dropSurface', 'dropPieces'].forEach(d => {
+                    const el = document.getElementById(d);
+                    if(el) el.classList.add('hidden');
+                });
+            }
+        });
+
+        window.appliquerFiltresAvances = function() {
+            vBudgetMin = document.getElementById('fBudgetMin').value;
+            vBudgetMax = document.getElementById('fBudgetMax').value;
+            vSurfaceMin = document.getElementById('fSurfaceMin').value;
+            vSurfaceMax = document.getElementById('fSurfaceMax').value;
+            
+            vPiecesChoisies = [];
+            document.querySelectorAll('.chk-piece:checked').forEach(chk => {
+                vPiecesChoisies.push(parseInt(chk.value));
+            });
+
+            document.getElementById('labelBudget').innerText = (vBudgetMin || vBudgetMax) ? `💰 ${vBudgetMin || 0}€ - ${vBudgetMax || 'Max'}€` : "💰 Budget (€)";
+            document.getElementById('labelSurface').innerText = (vSurfaceMin || vSurfaceMax) ? `📏 ${vSurfaceMin || 0}m² - ${vSurfaceMax || 'Max'}m²` : "📏 Surface (m²)";
+            document.getElementById('labelPieces').innerText = vPiecesChoisies.length > 0 ? `🧱 Pièces (${vPiecesChoisies.join(',')})` : "🧱 Pièces";
+
+            ['dropBudget', 'dropSurface', 'dropPieces'].forEach(d => document.getElementById(d).classList.add('hidden'));
+
+            mapCentreeAutomatiquement = false;
+            renderApp();
+        };
+
+        // FONCTION CRITIQUE : CALCUL DU NOMBRE DE JOURS ÉCOULÉS POUR LE SUIVI CHRONOLOGIQUE
+        function calculerJoursEcoules(dateStr) {
+            if (!dateStr) return 0;
+            try {
+                const parts = dateStr.split('/');
+                if(parts.length !== 3) return 0;
+                const dateFormatee = new Date(parts[2], parts[1] - 1, parts[0]);
+                const aujourdhui = new Date();
+                const diffTemps = aujourdhui - dateFormatee;
+                return Math.floor(diffTemps / (1000 * 60 * 60 * 24));
+            } catch(e) { return 0; }
+        }
+
+        // FONCTION DE ROUTAGE : LE MOTEUR DE LA RAFALE EXPRESS CIRCULAIRE
+        window.declencherRafaleExpress = function() {
+            // Étape 1 : Isoler exclusivement les biens du filtre "À Faire" triés du plus ancien au plus récent
+            let biensAFaire = listeBiens.filter(b => b.statut === "Actifs" && b.prospectionFaite === false);
+            biensAFaire.sort((a, b) => a.id - b.id); // Tri chronologique de stockage
+
+            if (biensAFaire.length === 0) {
+                alert("Aucun bien actif n'est présent dans votre dossier 'À Faire' actuellement.");
+                return;
+            }
+
+            // Étape 2 : Boucler si l'index de départ dépasse la taille du tableau actuel
+            if (indexDebutRafale >= biensAFaire.length) {
+                indexDebutRafale = 0;
+            }
+
+            // Étape 3 : Extraire la séquence de 5 biens
+            let selectionSelectionnee = biensAFaire.slice(indexDebutRafale, indexDebutRafale + 5);
+            let urlsOuvertes = 0;
+
+            selectionSelectionnee.forEach(bien => {
+                if (bien.lien) {
+                    window.open(bien.lien, '_blank');
+                    urlsOuvertes++;
+                }
+            });
+
+            if (urlsOuvertes > 0) {
+                // Décalage de l'index pour le prochain clic de rafale
+                indexDebutRafale += 5;
+                if (indexDebutRafale >= biensAFaire.length) indexDebutRafale = 0; // Sécurité de rotation boucle
+            } else {
+                alert("Les 5 biens ciblés dans cette tranche n'ont pas de lien URL configuré.");
+            }
+        };
+
+        function validerFiltrageGlobalDuBien(bien) {
+            let matchStatut = false;
+            if (filtreStatutActuel === "Tous") matchStatut = true;
+            else if (filtreStatutActuel === "Prospectés") matchStatut = bien.prospectionFaite === true;
+            else if (filtreStatutActuel === "Actifs") matchStatut = (bien.statut === "Actifs" && bien.prospectionFaite === false);
+            else matchStatut = bien.statut === filtreStatutActuel;
+
+            const matchType = (filtreTypeActuel === "Tous" || bien.type === filtreTypeActuel);
+            if (!matchStatut || !matchType) return false;
+
+            if (vBudgetMin || vBudgetMax) {
+                let pNum = convertirPrixNumerique(bien.prix);
+                if (vBudgetMin && pNum < parseInt(vBudgetMin)) return false;
+                if (vBudgetMax && pNum > parseInt(vBudgetMax)) return false;
+            }
+
+            if (vSurfaceMin || vSurfaceMax) {
+                let sNum = parseInt(bien.surface);
+                if (isNaN(sNum)) return false;
+                if (vSurfaceMin && sNum < parseInt(vSurfaceMin)) return false;
+                if (vSurfaceMax && sNum > parseInt(vSurfaceMax)) return false;
+            }
+
+            if (vPiecesChoisies.length > 0) {
+                let pcsNum = parseInt(bien.pieces);
+                if (isNaN(pcsNum)) return false;
+                let matchesPieces = vPiecesChoisies.some(p => {
+                    if (p === 5) return pcsNum >= 5;
+                    return pcsNum === p;
+                });
+                if (!matchesPieces) return false;
+            }
+
+            return true;
+        }
+
         function updateMapMarkers() {
             if (!markersGroup || !mapInstance) return;
             if (unPopupEstOuvertActuellement()) return;
@@ -271,16 +487,7 @@
             let bounds = [];
 
             listeBiens.forEach(bien => {
-                // APPLIQUE LE TRICIBLÉ DE TYPE ET STATUT SUR LA CARTE ÉGALEMENT
-                let matchStatut = false;
-                if (filtreStatutActuel === "Tous") matchStatut = true;
-                else if (filtreStatutActuel === "Prospectés") matchStatut = bien.prospectionFaite === true;
-                else if (filtreStatutActuel === "Actifs") matchStatut = (bien.statut === "Actifs" && bien.prospectionFaite === false);
-                else matchStatut = bien.statut === filtreStatutActuel;
-
-                const matchType = (filtreTypeActuel === "Tous" || bien.type === filtreTypeActuel);
-
-                if (!matchStatut || !matchType) return;
+                if (!validerFiltrageGlobalDuBien(bien)) return;
 
                 let coords = extraireCoordonneesDecimales(bien.gps);
                 if (!coords) return;
@@ -367,7 +574,7 @@
                     marker.openPopup();
                 }, 400);
             } else {
-                alert("La localisation de ce bien n'est pas chargée avec vos filtres de type actuels.");
+                alert("La localisation de ce bien n'est pas chargée avec vos critères de filtres actuels.");
             }
         };
 
@@ -501,6 +708,7 @@
                     email: document.getElementById('emailContact').value || '',
                     statut: "Inactifs",
                     dateAjout: new Date().toLocaleDateString('fr-FR'),
+                    dateProspection: '', // Devient alimenté à l'action d'appel de pige
                     prospectionFaite: false,
                     mandatSigne: false
                 };
@@ -544,7 +752,7 @@
             reader.onload = async function(evt) {
                 const text = evt.target.result;
                 const lines = text.split(/\r?\n/);
-                if (lines.length < 2) { alert("Le fichier semble vide."); return; }
+                if (lines.length < 2) { alert("Le fichier seems empty."); return; }
 
                 isSyncPaused = true; 
                 const separator = lines[0].includes(';') ? ';' : ',';
@@ -567,6 +775,7 @@
                         surface: '—', pieces: '—', prix: '—', 
                         contactNom: 'Non renseigné', contactPrenom: '', tel: '', email: '',
                         statut: "Inactifs", dateAjout: new Date().toLocaleDateString('fr-FR'),
+                        dateProspection: '',
                         prospectionFaite: false, mandatSigne: false
                     };
 
@@ -596,7 +805,10 @@
                             }
                             if (normHeader.includes('téléphone') || normHeader === 'tel') bienObj.tel = val;
                             if (normHeader.includes('mail')) bienObj.email = val;
-                            if (normHeader.includes('prospect') && (val.toLowerCase().includes('oui') || val.toLowerCase().includes('fait') || val === '1')) { bienObj.prospectionFaite = true; }
+                            if (normHeader.includes('prospect') && (val.toLowerCase().includes('oui') || val.toLowerCase().includes('fait') || val === '1')) { 
+                                bienObj.prospectionFaite = true; 
+                                bienObj.dateProspection = bienObj.dateAjout;
+                            }
                             if (normHeader.includes('mandat') && (val.toLowerCase().includes('oui') || val.toLowerCase().includes('sign') || val === '1')) { bienObj.mandatSigne = true; bienObj.statut = "Mandats"; }
                             if (normHeader.includes('nompr')) {
                                 let espaceIdx = val.indexOf(' ');
@@ -633,7 +845,7 @@
             }
 
             let csvContent = "sep=;\n"; 
-            csvContent += "Nom du bien;Date de l'annonce;Coordonnées GPS;Ville;Rue;Type de bien;M²;Pièces;Prix;Statut;Prospection réalisée;Mandat signé;Nom Contact;Prénom Contact;Téléphone;E-mail;Lien de l'annonce\n";
+            csvContent += "Nom du bien;Date de l'annonce;Coordonnées GPS;Ville;Rue;Type de bien;M²;Pièces;Prix;Statut;Prospection réalisée;Date Prospection;Mandat signé;Nom Contact;Prénom Contact;Téléphone;E-mail;Lien de l'annonce\n";
 
             listeBiens.forEach(b => {
                 let coords = extraireCoordonneesDecimales(b.gps);
@@ -652,6 +864,7 @@
                     `"${prixNettoye}"`, 
                     `"${(b.statut || 'Inactifs')}"`,
                     `"${b.prospectionFaite ? 'Oui' : 'Non'}"`,
+                    `"${b.dateProspection || ''}"`,
                     `"${b.mandatSigne ? 'Oui' : 'Non'}"`,
                     `"${(b.contactNom || 'Non renseigné').replace(/"/g, '""').replace(/;/g, ',')}"`,
                     `"${(b.contactPrenom || '').replace(/"/g, '""').replace(/;/g, ',')}"`,
@@ -682,10 +895,18 @@
             renderApp();
         }
 
+        // MISE À JOUR : ENREGISTREMENT AUTOMATIQUE DE LA DATE DE PROSPECTION LORS DU PASSAGE À "FAIT"
         async function toggleProspectionDirecte(id) {
             const bien = listeBiens.find(b => b.id == id);
             if (!bien) return;
             bien.prospectionFaite = !bien.prospectionFaite;
+            
+            if (bien.prospectionFaite) {
+                bien.dateProspection = new Date().toLocaleDateString('fr-FR'); // Tag horodatage de pige
+            } else {
+                bien.dateProspection = '';
+            }
+
             await uploadToCloud();
             renderApp();
         }
@@ -743,7 +964,7 @@
                 if (b.statut === "Mandats") cs.Mandats++;
                 
                 if (b.prospectionFaite) cs.Prospectés++; 
-                else if (b.statut === "Actifs") cs.Actifs++; // "À faire" comprend : Actif ET non prospecté uniquement
+                else if (b.statut === "Actifs") cs.Actifs++; 
 
                 if(ct[b.type] !== undefined) ct[b.type]++; 
             });
@@ -754,7 +975,6 @@
             document.getElementById('count-prospectes').innerText = cs.Prospectés;
             document.getElementById('count-mandats').innerText = cs.Mandats;
 
-            // RENDU VISUEL DES ONGLETS COMPTEURS SÉLECTIONNÉS
             const statutsAssocies = ["Tous", "Actifs", "Inactifs", "Prospectés", "Mandats"];
             statutsAssocies.forEach(s => {
                 const el = document.getElementById(`card-filter-${s}`);
@@ -789,7 +1009,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // BRANCHEMENT DES COMPTEURS EN TANT QUE NOUVEAUX FILTRES DE STATUT
             const statutsAssocies = ["Tous", "Actifs", "Inactifs", "Prospectés", "Mandats"];
             statutsAssocies.forEach(s => {
                 const el = document.getElementById(`card-filter-${s}`);
@@ -804,7 +1023,6 @@
             document.querySelectorAll('.tab-type-btn').forEach(btn => {
                 btn.onclick = () => {
                     filtreTypeActuel = btn.getAttribute('data-filter-type');
-                    // FORCE AUSSI LE RE-RENDU ET LE FILTRAGE DES MARQUEURS SUR LA CARTE
                     mapCentreeAutomatiquement = false; 
                     renderApp();
                 };
@@ -817,16 +1035,7 @@
             renderCountersAndTabs();
             annoncesContainer.innerHTML = '';
             
-            let bf = listeBiens.filter(b => {
-                let matchStatut = false;
-                if (filtreStatutActuel === "Tous") matchStatut = true;
-                else if (filtreStatutActuel === "Prospectés") matchStatut = b.prospectionFaite === true;
-                else if (filtreStatutActuel === "Actifs") matchStatut = (b.statut === "Actifs" && b.prospectionFaite === false); // Notion "À faire"
-                else matchStatut = b.statut === filtreStatutActuel;
-
-                const matchType = (filtreTypeActuel === "Tous" || b.type === filtreTypeActuel);
-                return matchStatut && matchType;
-            });
+            let bf = listeBiens.filter(b => validerFiltrageGlobalDuBien(b));
 
             if (listeBiens.length > 0) {
                 initMap();
@@ -840,7 +1049,7 @@
             else if (triActuel === "trajet") { bf = trierParTrajetProche(bf); }
 
             if(bf.length === 0) {
-                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien trouvé correspondant à ces filtres.</div>`;
+                annoncesContainer.innerHTML = `<div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed">Aucun bien trouvé correspondant à vos critères cumulés.</div>`;
                 return;
             }
 
@@ -853,24 +1062,74 @@
                 let prospText = bien.prospectionFaite ? "✅ FAIT" : "❌ À FAIRE";
 
                 let coords = extraireCoordonneesDecimales(bien.gps);
-                let geoLoc = coords ? (cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || { ville: (coords.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Chargement en cours..." }) : { ville: "Cannes", rue: "Axe GPS" };
+                let geoLoc = coords ? (cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || { ville: (coords.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Chargement..." }) : { ville: "Cannes", rue: "Axe GPS" };
                 const classBadgeUnique = "text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md font-bold";
+
+                // 📐 ETAPE A : CALCULS AUTOMATIQUES DU PRIX AU M² & SÉCURITÉ DE MARCHÉ
+                let surfaceNum = parseFloat(bien.surface);
+                let prixNum = convertirPrixNumerique(bien.prix);
+                let chainePrixMetreCarre = "—";
+                let chaineAlerteMarche = "";
+
+                if (!isNaN(surfaceNum) && surfaceNum > 0 && prixNum > 0) {
+                    let pxM2 = Math.round(prixNum / surfaceNum);
+                    chainePrixMetreCarre = pxM2.toLocaleString('fr-FR') + " € / m²";
+                    
+                    // Détection automatique de la ville pour comparaison
+                    let nomVilleBase = geoLoc.ville.toLowerCase();
+                    let cibleMoyenne = nomVilleBase.includes("cannet") ? MOYENNE_SECTEUR["le cannet"] : MOYENNE_SECTEUR["cannes"];
+                    let ecartPourcent = Math.round(((pxM2 - cibleMoyenne) / cibleMoyenne) * 100);
+                    
+                    if (ecartPourcent > 0) {
+                        chaineAlerteMarche = `<span class="text-rose-500 font-bold ml-1.5">+${ecartPourcent}% vs moyenne ${nomVilleBase.includes("cannet") ? 'Le Cannet' : 'Cannes'}</span>`;
+                    } else {
+                        chaineAlerteMarche = `<span class="text-emerald-500 font-bold ml-1.5">${ecartPourcent}% vs moyenne ${nomVilleBase.includes("cannet") ? 'Le Cannet' : 'Cannes'}</span>`;
+                    }
+                }
+
+                // ⏱️ ETAPE B : MODULE CRITICAL ALERTE RAPPEL DE PIGE (30 JOURS)
+                let dateReferenceCalcul = bien.dateProspection ? bien.dateProspection : bien.dateAjout;
+                let joursEcoules = calculerJoursEcoules(dateReferenceCalcul);
+                
+                // Détection de l'état d'inactivité du dossier (Bordure Orange d'Alerte)
+                let borderAlerteClass = "border-gray-200 shadow-sm";
+                let badgeAlertePigeHTML = "";
+                
+                if (joursEcoules >= 30 && (bien.statut === "Actifs" || bien.prospectionFaite)) {
+                    borderAlerteClass = "border-amber-500 border-2 shadow-md animate-pulse-slow";
+                    badgeAlertePigeHTML = `<span class="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> RELANCE DE PIGE</span>`;
+                }
+
+                // Affichage du badge de temps dynamique
+                let chaineTempsProspectionHTML = "";
+                if (bien.prospectionFaite && bien.dateProspection) {
+                    chaineTempsProspectionHTML = `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">📋 Prospecté le ${bien.dateProspection} (+${joursEcoules} jours)</span>`;
+                } else {
+                    chaineTempsProspectionHTML = `<span class="text-slate-400 italic font-medium">Non prospecté (Créé il y a ${joursEcoules} jours)</span>`;
+                }
 
                 const isExpanded = !!openCards[bien.id];
                 const card = document.createElement('div');
                 card.id = `card-${bien.id}`; 
-                card.className = "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300";
+                card.className = `bg-white rounded-xl overflow-hidden transition-all duration-300 ${borderAlerteClass}`;
                 card.innerHTML = `
                     <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="cursor-pointer flex-1" onclick="toggleCollapse(${bien.id})">
-                            <h3 class="text-lg font-bold text-gray-800">${bien.nom}</h3>
-                            <div class="text-xs mt-1.5 flex flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-bold text-gray-800">${bien.nom}</h3>
+                                ${badgeAlertePigeHTML}
+                            </div>
+                            <div class="text-xs mt-1.5 flex flex-wrap gap-2 items-center">
                                 <span class="${classBadgeUnique}">${bien.dateAjout}</span>
                                 <span class="${classBadgeUnique}">${bien.surface} m²</span>
                                 <span class="${classBadgeUnique}">${bien.pieces || '—'} pièces</span>
-                                <span class="${classBadgeUnique}">${bien.prix} €</span>
+                                <span class="text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md font-extrabold flex flex-col text-left">
+                                    <span>${bien.prix} €</span>
+                                    <span class="text-[9px] text-slate-400 font-semibold tracking-tight -mt-0.5 block">${chainePrixMetreCarre} ${chaineAlerteMarche}</span>
+                                </span>
                                 <span class="${classBadgeUnique}">Ville : ${geoLoc.ville}</span>
                                 <span class="${classBadgeUnique}">Rue : ${geoLoc.rue}</span>
+                                ${chaineTempsProspectionHTML}
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
@@ -911,7 +1170,7 @@
                 `;
                 annoncesContainer.appendChild(card);
                 
-                if (coords && (!cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`].rue === "Chargement en cours...")) {
+                if (coords && (!cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`].rue === "Chargement...")) {
                     fetchLieuExactParGps(bien.gps).then(() => {
                         let badgeVille = card.querySelector('.mt-1.5').children[4];
                         let badgeRue = card.querySelector('.mt-1.5').children[5];
