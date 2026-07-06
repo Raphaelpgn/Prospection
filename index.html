@@ -12,25 +12,13 @@
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; }
         .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); padding: 4px; }
         .leaflet-popup-content { font-family: 'Segoe UI', Roboto, sans-serif; margin: 8px 12px; }
-        
-        /* Animations GPS */
-        @keyframes pulseUser {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-        }
-        @keyframes pulseBlue {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
     <header class="bg-[#2c4c5e] text-white py-6 text-center shadow-md">
-        <h1 class="text-2xl font-bold flex items-center justify-center gap-2">🏠 Prospecteur Immobilier v2</h1>
-        <p class="text-sm text-gray-300 mt-1">Synchronisation Cloud en Temps Réel (Multi-plateforme)</p>
+        <h1 class="text-2xl font-bold flex items-center justify-center gap-2">🏠 Prospecteur Immobilier</h1>
+        <p class="text-sm text-gray-300 mt-1">Synchronisation Cloud en Temps Réel</p>
     </header>
 
     <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6">
@@ -81,16 +69,24 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">Surface (m²)</label>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Prix (€)</label>
+                        <input type="text" id="prix" placeholder="Ex: 1 250 000" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Surface habitable (m²)</label>
                         <input type="number" id="surface" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Surface terrain (m²)</label>
+                        <input type="number" id="terrain" placeholder="Optionnel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">Nombre de pièces</label>
                         <input type="number" id="pieces" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">Prix (€)</label>
-                        <input type="text" id="prix" placeholder="Ex: 1 250 000" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Nombre de chambres</label>
+                        <input type="number" id="chambres" placeholder="Optionnel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
                     <div class="md:col-span-2">
                         <select id="nouveauBien" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
@@ -139,10 +135,10 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-wider pl-1 gap-2">
                 <span>🗺️ Carte Interactive de Prospection</span>
                 <span class="flex flex-wrap gap-2 normal-case font-medium text-slate-600 select-none">
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse inline-block border border-white"></span>Le plus proche</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block border border-white"></span>À Faire</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block border border-white"></span>Fait</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block border border-white"></span>Mandat</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-black inline-block"></span>Inactif</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>À Faire</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>Fait</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>Mandat</span>
                 </span>
             </div>
             <div id="map" class="w-full h-80 md:h-[400px] rounded-lg border border-gray-200 z-0"></div>
@@ -183,14 +179,14 @@
 
             <div class="flex flex-col gap-2 pt-3 border-t border-gray-100">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">🔍 Affiner la recherche (Filtres cumulables) :</span>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 relative z-10">
                     
                     <div class="relative drop-filter-container">
                         <button onclick="toggleDropFilter('dropBudget')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
-                            <span id="labelBudget">💰 Budget (€)</span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                            <span id="labelBudget" class="truncate pr-1">💰 Budget (€)</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 shrink-0"></i>
                         </button>
-                        <div id="dropBudget" class="hidden absolute left-0 top-full mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-3 z-50">
+                        <div id="dropBudget" class="hidden absolute left-0 top-full mt-1 w-[200%] sm:w-64 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-3 z-50">
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-[10px] text-gray-400 font-bold uppercase">À partir de</label>
@@ -207,10 +203,10 @@
 
                     <div class="relative drop-filter-container">
                         <button onclick="toggleDropFilter('dropSurface')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
-                            <span id="labelSurface">📏 Surface (m²)</span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                            <span id="labelSurface" class="truncate pr-1">📏 Surface (m²)</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 shrink-0"></i>
                         </button>
-                        <div id="dropSurface" class="hidden absolute left-0 top-full mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-3 z-50">
+                        <div id="dropSurface" class="hidden absolute left-0 top-full mt-1 w-[200%] sm:w-64 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-3 z-50">
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-[10px] text-gray-400 font-bold uppercase">À partir de</label>
@@ -226,11 +222,31 @@
                     </div>
 
                     <div class="relative drop-filter-container">
-                        <button onclick="toggleDropFilter('dropPieces')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
-                            <span id="labelPieces">🧱 Pièces</span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        <button onclick="toggleDropFilter('dropTerrain')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
+                            <span id="labelTerrain" class="truncate pr-1">🌳 Terrain (m²)</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 shrink-0"></i>
                         </button>
-                        <div id="dropPieces" class="hidden absolute right-0 top-full mt-1 w-full sm:w-56 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-2 z-50 max-h-60 overflow-y-auto">
+                        <div id="dropTerrain" class="hidden absolute left-0 top-full mt-1 w-[200%] sm:w-64 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-3 z-50">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 font-bold uppercase">À partir de</label>
+                                    <input type="number" id="fTerrainMin" placeholder="Min" class="w-full border rounded p-1.5 text-xs focus:outline-none focus:border-[#2c4c5e]">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 font-bold uppercase">Jusqu'à</label>
+                                    <input type="number" id="fTerrainMax" placeholder="Max" class="w-full border rounded p-1.5 text-xs focus:outline-none focus:border-[#2c4c5e]">
+                                </div>
+                            </div>
+                            <button onclick="appliquerFiltresAvances()" class="w-full bg-[#2c4c5e] text-white text-[11px] font-bold py-1.5 rounded cursor-pointer">Appliquer</button>
+                        </div>
+                    </div>
+
+                    <div class="relative drop-filter-container">
+                        <button onclick="toggleDropFilter('dropPieces')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
+                            <span id="labelPieces" class="truncate pr-1">🧱 Pièces</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 shrink-0"></i>
+                        </button>
+                        <div id="dropPieces" class="hidden absolute right-0 top-full mt-1 w-[200%] sm:w-56 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-2 z-50 max-h-60 overflow-y-auto">
                             <span class="block text-[10px] text-gray-400 font-bold uppercase mb-1">Nombre de pièces :</span>
                             <div class="space-y-1.5 text-xs text-gray-700">
                                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="1" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 1 pièce</label>
@@ -238,6 +254,24 @@
                                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="3" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 3 pièces</label>
                                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="4" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 4 pièces</label>
                                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="5" class="chk-piece rounded border-gray-300 text-[#2c4c5e]"> 5 pièces ou +</label>
+                            </div>
+                            <button onclick="appliquerFiltresAvances()" class="w-full mt-2 bg-[#2c4c5e] text-white text-[11px] font-bold py-1.5 rounded cursor-pointer">Filtrer</button>
+                        </div>
+                    </div>
+
+                    <div class="relative drop-filter-container">
+                        <button onclick="toggleDropFilter('dropChambres')" class="w-full text-left bg-slate-50 border border-gray-200 rounded-md p-2.5 text-xs font-semibold text-gray-700 flex justify-between items-center cursor-pointer hover:bg-slate-100">
+                            <span id="labelChambres" class="truncate pr-1">🛏️ Chambres</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 shrink-0"></i>
+                        </button>
+                        <div id="dropChambres" class="hidden absolute right-0 top-full mt-1 w-[200%] sm:w-56 bg-white border border-gray-200 rounded-lg p-4 shadow-xl space-y-2 z-50 max-h-60 overflow-y-auto">
+                            <span class="block text-[10px] text-gray-400 font-bold uppercase mb-1">Nombre de chambres :</span>
+                            <div class="space-y-1.5 text-xs text-gray-700">
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="1" class="chk-chambre rounded border-gray-300 text-[#2c4c5e]"> 1 chambre</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="2" class="chk-chambre rounded border-gray-300 text-[#2c4c5e]"> 2 chambres</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="3" class="chk-chambre rounded border-gray-300 text-[#2c4c5e]"> 3 chambres</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="4" class="chk-chambre rounded border-gray-300 text-[#2c4c5e]"> 4 chambres</label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="5" class="chk-chambre rounded border-gray-300 text-[#2c4c5e]"> 5 chambres ou +</label>
                             </div>
                             <button onclick="appliquerFiltresAvances()" class="w-full mt-2 bg-[#2c4c5e] text-white text-[11px] font-bold py-1.5 rounded cursor-pointer">Filtrer</button>
                         </div>
@@ -279,10 +313,17 @@
         let isSyncPaused = false; 
         let isFormOpen = false; 
 
+        // VARIABLES DE GEOLOCALISATION UTILISATEUR EN DIRECT
+        let userPosition = null;
+        let userMarker = null;
+        let watchPositionId = null;
+
         // CRITÈRES DES FILTRES CUMULABLES
         let vBudgetMin = "", vBudgetMax = "";
         let vSurfaceMin = "", vSurfaceMax = "";
+        let vTerrainMin = "", vTerrainMax = "";
         let vPiecesChoisies = [];
+        let vChambresChoisies = [];
 
         // INDEX DE ROTATION POUR LA RAFALE EXPRESS CIRCULAIRE
         let indexDebutRafale = 0;
@@ -292,11 +333,7 @@
         let mapCentreeAutomatiquement = false; 
         let dictMarqueursReferences = {}; 
 
-        // VARIABLES GPS TEMPS RÉEL ET PROXIMITÉ
-        let userCurrentPosition = null;
-        let idBienLePlusProche = null;
-        let userMarker = null;
-
+        // VALEURS MOYENNES DU MARCHÉ ESTIMÉ POUR LES ALERTES PRIX AU M²
         const MOYENNE_SECTEUR = {
             "cannes": 10500,
             "le cannet": 7300
@@ -364,15 +401,33 @@
             markersGroup = L.layerGroup().addTo(mapInstance);
             mapInstance.on('movestart', () => { mapCentreeAutomatiquement = true; });
 
-            // RESTAURATION DU MARQUEUR GPS UTILISATEUR EN CAS D'INITIALISATION TARDIVE
-            if (userCurrentPosition) {
-                let userIcon = L.divIcon({
-                    html: `<div style="background-color: #22c55e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(34,197,94,0.8); animation: pulseUser 1.5s infinite;"></div>`,
-                    className: '',
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8]
-                });
-                userMarker = L.marker([userCurrentPosition.lat, userCurrentPosition.lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(mapInstance).bindPopup("📍 Vous êtes ici");
+            // MODULE DE GEOLOCALISATION EN DIRECT DE L'UTILISATEUR (POINT JAUNE)
+            if (navigator.geolocation && !watchPositionId) {
+                watchPositionId = navigator.geolocation.watchPosition((position) => {
+                    userPosition = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    
+                    if (mapInstance) {
+                        if (!userMarker) {
+                            let yellowIcon = L.divIcon({
+                                html: `<div class="relative flex h-5 w-5 -ml-1 -mt-1"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span><span class="relative inline-flex rounded-full h-5 w-5 bg-yellow-500 border-2 border-white shadow-lg flex items-center justify-center text-[10px]">📍</span></div>`,
+                                className: '',
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10]
+                            });
+                            userMarker = L.marker([userPosition.lat, userPosition.lng], { icon: yellowIcon, zIndexOffset: 1000 }).addTo(mapInstance);
+                            
+                            // Forcer la mise à jour la toute première fois qu'on trouve la position pour afficher le plus proche
+                            if (!userMarker.hasRendered) {
+                                userMarker.hasRendered = true;
+                                renderApp();
+                            }
+                        } else {
+                            userMarker.setLatLng([userPosition.lat, userPosition.lng]);
+                        }
+                    }
+                }, (err) => {
+                    console.warn("Geolocalisation erreur:", err);
+                }, { enableHighAccuracy: true });
             }
         }
 
@@ -389,7 +444,7 @@
         }
 
         window.toggleDropFilter = function(id) {
-            const dropdowns = ['dropBudget', 'dropSurface', 'dropPieces'];
+            const dropdowns = ['dropBudget', 'dropSurface', 'dropPieces', 'dropTerrain', 'dropChambres'];
             dropdowns.forEach(d => {
                 const target = document.getElementById(d);
                 if (d === id) target.classList.toggle('hidden');
@@ -399,7 +454,7 @@
 
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.drop-filter-container')) {
-                ['dropBudget', 'dropSurface', 'dropPieces'].forEach(d => {
+                ['dropBudget', 'dropSurface', 'dropPieces', 'dropTerrain', 'dropChambres'].forEach(d => {
                     const el = document.getElementById(d);
                     if(el) el.classList.add('hidden');
                 });
@@ -411,17 +466,26 @@
             vBudgetMax = document.getElementById('fBudgetMax').value;
             vSurfaceMin = document.getElementById('fSurfaceMin').value;
             vSurfaceMax = document.getElementById('fSurfaceMax').value;
+            vTerrainMin = document.getElementById('fTerrainMin').value;
+            vTerrainMax = document.getElementById('fTerrainMax').value;
             
             vPiecesChoisies = [];
             document.querySelectorAll('.chk-piece:checked').forEach(chk => {
                 vPiecesChoisies.push(parseInt(chk.value));
             });
 
+            vChambresChoisies = [];
+            document.querySelectorAll('.chk-chambre:checked').forEach(chk => {
+                vChambresChoisies.push(parseInt(chk.value));
+            });
+
             document.getElementById('labelBudget').innerText = (vBudgetMin || vBudgetMax) ? `💰 ${vBudgetMin || 0}€ - ${vBudgetMax || 'Max'}€` : "💰 Budget (€)";
             document.getElementById('labelSurface').innerText = (vSurfaceMin || vSurfaceMax) ? `📏 ${vSurfaceMin || 0}m² - ${vSurfaceMax || 'Max'}m²` : "📏 Surface (m²)";
+            document.getElementById('labelTerrain').innerText = (vTerrainMin || vTerrainMax) ? `🌳 ${vTerrainMin || 0}m² - ${vTerrainMax || 'Max'}m²` : "🌳 Terrain (m²)";
             document.getElementById('labelPieces').innerText = vPiecesChoisies.length > 0 ? `🧱 Pièces (${vPiecesChoisies.join(',')})` : "🧱 Pièces";
+            document.getElementById('labelChambres').innerText = vChambresChoisies.length > 0 ? `🛏️ Chambres (${vChambresChoisies.join(',')})` : "🛏️ Chambres";
 
-            ['dropBudget', 'dropSurface', 'dropPieces'].forEach(d => document.getElementById(d).classList.add('hidden'));
+            ['dropBudget', 'dropSurface', 'dropPieces', 'dropTerrain', 'dropChambres'].forEach(d => document.getElementById(d).classList.add('hidden'));
 
             mapCentreeAutomatiquement = false;
             renderApp();
@@ -489,14 +553,21 @@
             filtreTypeActuel = "Tous";
             vBudgetMin = ""; vBudgetMax = "";
             vSurfaceMin = ""; vSurfaceMax = "";
+            vTerrainMin = ""; vTerrainMax = "";
             vPiecesChoisies = [];
+            vChambresChoisies = [];
             
             document.getElementById('labelBudget').innerText = "💰 Budget (€)";
             document.getElementById('labelSurface').innerText = "📏 Surface (m²)";
+            document.getElementById('labelTerrain').innerText = "🌳 Terrain (m²)";
             document.getElementById('labelPieces').innerText = "🧱 Pièces";
+            document.getElementById('labelChambres').innerText = "🛏️ Chambres";
+            
             document.getElementById('fBudgetMin').value = ""; document.getElementById('fBudgetMax').value = "";
             document.getElementById('fSurfaceMin').value = ""; document.getElementById('fSurfaceMax').value = "";
+            document.getElementById('fTerrainMin').value = ""; document.getElementById('fTerrainMax').value = "";
             document.querySelectorAll('.chk-piece').forEach(c => c.checked = false);
+            document.querySelectorAll('.chk-chambre').forEach(c => c.checked = false);
 
             openCards[bienTrouve.id] = true;
             sessionStorage.setItem('openCards', JSON.stringify(openCards));
@@ -519,14 +590,21 @@
             filtreTypeActuel = "Tous";
             vBudgetMin = ""; vBudgetMax = "";
             vSurfaceMin = ""; vSurfaceMax = "";
+            vTerrainMin = ""; vTerrainMax = "";
             vPiecesChoisies = [];
+            vChambresChoisies = [];
 
             document.getElementById('labelBudget').innerText = "💰 Budget (€)";
             document.getElementById('labelSurface').innerText = "📏 Surface (m²)";
+            document.getElementById('labelTerrain').innerText = "🌳 Terrain (m²)";
             document.getElementById('labelPieces').innerText = "🧱 Pièces";
+            document.getElementById('labelChambres').innerText = "🛏️ Chambres";
+            
             document.getElementById('fBudgetMin').value = ""; document.getElementById('fBudgetMax').value = "";
             document.getElementById('fSurfaceMin').value = ""; document.getElementById('fSurfaceMax').value = "";
+            document.getElementById('fTerrainMin').value = ""; document.getElementById('fTerrainMax').value = "";
             document.querySelectorAll('.chk-piece').forEach(c => c.checked = false);
+            document.querySelectorAll('.chk-chambre').forEach(c => c.checked = false);
 
             openCards[idBienExistant] = true;
             sessionStorage.setItem('openCards', JSON.stringify(openCards));
@@ -569,6 +647,13 @@
                 if (vSurfaceMax && sNum > parseInt(vSurfaceMax)) return false;
             }
 
+            if (vTerrainMin || vTerrainMax) {
+                let tNum = parseInt(bien.terrain);
+                if (isNaN(tNum)) return false; 
+                if (vTerrainMin && tNum < parseInt(vTerrainMin)) return false;
+                if (vTerrainMax && tNum > parseInt(vTerrainMax)) return false;
+            }
+
             if (vPiecesChoisies.length > 0) {
                 let pcsNum = parseInt(bien.pieces);
                 if (isNaN(pcsNum)) return false;
@@ -579,36 +664,42 @@
                 if (!matchesPieces) return false;
             }
 
+            if (vChambresChoisies.length > 0) {
+                let chNum = parseInt(bien.chambres);
+                if (isNaN(chNum)) return false;
+                let matchesChambres = vChambresChoisies.some(c => {
+                    if (c === 5) return chNum >= 5;
+                    return chNum === c;
+                });
+                if (!matchesChambres) return false;
+            }
+
             return true;
         }
 
-        // MOTEUR DE DÉTECTION DU BIEN LE PLUS PROCHE
-        function recalculerIdPlusProche() {
-            if (!userCurrentPosition || listeBiens.length === 0) {
-                idBienLePlusProche = null;
-                return;
-            }
-            
+        // MOTEUR D'ANALYSE DE PROXIMITÉ POUR LE BIEN LE PLUS PROCHE
+        function trouverBienPlusProche(listeFiltree) {
+            if (!userPosition) return null;
+            let closestBien = null;
             let minDistance = Infinity;
-            let closestId = null;
 
-            listeBiens.forEach(bien => {
+            listeFiltree.forEach(bien => {
+                // Le filtre exige de ne scanner QUE ceux qui font partie de "À prospecter / À faire"
                 if (bien.statut === "Actifs" && !bien.prospectionFaite) {
                     let coords = extraireCoordonneesDecimales(bien.gps);
                     if (coords) {
-                        let dist = calculerDistancePoints(userCurrentPosition, coords);
-                        if (dist < minDistance) {
-                            minDistance = dist;
-                            closestId = bien.id;
+                        let d = calculerDistancePoints(userPosition, coords);
+                        if (d < minDistance) {
+                            minDistance = d;
+                            closestBien = bien;
                         }
                     }
                 }
             });
-
-            idBienLePlusProche = closestId;
+            return closestBien;
         }
 
-        function updateMapMarkers() {
+        function updateMapMarkers(closestBienId = null) {
             if (!markersGroup || !mapInstance) return;
             if (unPopupEstOuvertActuellement()) return;
 
@@ -623,23 +714,27 @@
                 let coords = extraireCoordonneesDecimales(bien.gps);
                 if (!coords) return;
 
-                let estPlusProche = (bien.id === idBienLePlusProche);
                 let codeCouleur = "#ef4444"; 
-                if (bien.statut === "Inactifs") codeCouleur = "#000000"; 
-                else if (bien.statut === "Mandats") codeCouleur = "#a855f7"; 
-                else if (bien.prospectionFaite) codeCouleur = "#22c55e"; 
-                
-                if (estPlusProche) codeCouleur = "#3b82f6";
+                let htmlIcon = '';
+
+                // SI C'EST LE BIEN LE PLUS PROCHE : POINT BLEU FLASHI
+                if (bien.id === closestBienId) {
+                    htmlIcon = `<div class="relative flex h-5 w-5 -ml-0.5 -mt-0.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span><span class="relative inline-flex rounded-full h-5 w-5 bg-sky-500 border-2 border-white shadow-lg flex items-center justify-center text-[8px]">🚗</span></div>`;
+                } else {
+                    if (bien.statut === "Inactifs") codeCouleur = "#000000"; 
+                    else if (bien.statut === "Mandats") codeCouleur = "#a855f7"; 
+                    else if (bien.prospectionFaite) codeCouleur = "#22c55e"; 
+
+                    htmlIcon = `<div style="background-color: ${codeCouleur}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`;
+                }
 
                 let geoLoc = cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || { ville: (coords.lat > 43.5645 ? "Le Cannet" : "Cannes"), rue: "Cliquez pour voir" };
-
-                let htmlIcon = `<div style="background-color: ${codeCouleur}; width: ${estPlusProche ? 18 : 14}px; height: ${estPlusProche ? 18 : 14}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); ${estPlusProche ? 'animation: pulseBlue 1.5s infinite;' : ''}"></div>`;
 
                 let markerIcon = L.divIcon({
                     html: htmlIcon,
                     className: '',
-                    iconSize: [estPlusProche ? 18 : 14, estPlusProche ? 18 : 14],
-                    iconAnchor: [estPlusProche ? 9 : 7, estPlusProche ? 9 : 7]
+                    iconSize: bien.id === closestBienId ? [20, 20] : [14, 14],
+                    iconAnchor: bien.id === closestBienId ? [10, 10] : [7, 7]
                 });
 
                 let cleanGpsStr = bien.gps.replace(/'/g, "\\'");
@@ -649,7 +744,9 @@
                         <div style="font-size: 11px; color: #4b5563; line-height: 1.4;">
                             <div>⏱️ ${bien.dateAjout || '—'}</div>
                             <div>📏 <strong>Surface :</strong> ${bien.surface || '—'} m²</div>
+                            <div>🌳 <strong>Terrain :</strong> ${bien.terrain || '—'} m²</div>
                             <div>🧱 <strong>Pièces :</strong> ${bien.pieces || '—'}</div>
+                            <div>🛏️ <strong>Chambres :</strong> ${bien.chambres || '—'}</div>
                             <div>💰 <strong>Prix :</strong> ${bien.prix || '—'} €</div>
                             <div>🏙️ <strong>Ville :</strong> ${geoLoc.ville}</div>
                             <div style="margin-bottom: 6px;">📍 <strong>Rue :</strong> ${geoLoc.rue}</div>
@@ -729,7 +826,9 @@
             document.getElementById('gps').value = bien.gps || '';
             document.getElementById('typeBien').value = bien.type || 'Maison';
             document.getElementById('surface').value = bien.surface === '—' ? '' : bien.surface;
+            document.getElementById('terrain').value = bien.terrain === '—' ? '' : bien.terrain;
             document.getElementById('pieces').value = bien.pieces === '—' ? '' : bien.pieces;
+            document.getElementById('chambres').value = bien.chambres === '—' ? '' : bien.chambres;
             document.getElementById('prix').value = bien.prix === '—' ? '' : bien.prix.replace(/\s/g, '');
             document.getElementById('nomContact').value = bien.contactNom === 'Non renseigné' ? '' : bien.contactNom;
             document.getElementById('prenomContact').value = bien.contactPrenom || '';
@@ -875,7 +974,9 @@
                     listeBiens[idx].gps = inputGpsStr;
                     listeBiens[idx].type = inputTypeStr;
                     listeBiens[idx].surface = document.getElementById('surface').value || '—';
+                    listeBiens[idx].terrain = document.getElementById('terrain').value || '—';
                     listeBiens[idx].pieces = document.getElementById('pieces').value || '—';
+                    listeBiens[idx].chambres = document.getElementById('chambres').value || '—';
                     listeBiens[idx].prix = formatPrix;
                     listeBiens[idx].contactNom = document.getElementById('nomContact').value || 'Non renseigné';
                     listeBiens[idx].contactPrenom = document.getElementById('prenomContact').value || '';
@@ -891,7 +992,9 @@
                     gps: inputGpsStr,
                     type: inputTypeStr,
                     surface: document.getElementById('surface').value || '—',
+                    terrain: document.getElementById('terrain').value || '—',
                     pieces: document.getElementById('pieces').value || '—',
+                    chambres: document.getElementById('chambres').value || '—',
                     prix: formatPrix,
                     contactNom: document.getElementById('nomContact').value || 'Non renseigné',
                     contactPrenom: document.getElementById('prenomContact').value || '',
@@ -965,7 +1068,7 @@
                     let bienObj = {
                         id: Date.now() + i,
                         nom: '', lien: '', gps: '', type: 'Maison', 
-                        surface: '—', pieces: '—', prix: '—', 
+                        surface: '—', terrain: '—', pieces: '—', chambres: '—', prix: '—', 
                         contactNom: 'Non renseigné', contactPrenom: '', tel: '', email: '',
                         statut: "Inactifs", dateAjout: new Date().toLocaleDateString('fr-FR'),
                         dateProspection: '',
@@ -991,7 +1094,9 @@
                                 else bienObj.type = 'Autre';
                             }
                             if (normHeader === 'm²' || normHeader.includes('surface')) bienObj.surface = val;
+                            if (normHeader.includes('terrain') || normHeader.includes('parcelle')) bienObj.terrain = val;
                             if (normHeader.includes('pièce')) bienObj.pieces = val;
+                            if (normHeader.includes('chambre')) bienObj.chambres = val;
                             if (normHeader === 'prix') {
                                 let num = Number(val.replace(/\s/g, '').replace('€', '').replace(' ', ''));
                                 bienObj.prix = !isNaN(num) && num > 0 ? num.toLocaleString('fr-FR') : val;
@@ -1038,7 +1143,7 @@
             }
 
             let csvContent = "sep=;\n"; 
-            csvContent += "Nom du bien;Date de l'annonce;Coordonnées GPS;Ville;Rue;Type de bien;M²;Pièces;Prix;Statut;Prospection réalisée;Date Prospection;Mandat signé;Nom Contact;Prénom Contact;Téléphone;E-mail;Lien de l'annonce\n";
+            csvContent += "Nom du bien;Date de l'annonce;Coordonnées GPS;Ville;Rue;Type de bien;M² Habitable;Terrain m²;Pièces;Chambres;Prix;Statut;Prospection réalisée;Date Prospection;Mandat signé;Nom Contact;Prénom Contact;Téléphone;E-mail;Lien de l'annonce\n";
 
             listeBiens.forEach(b => {
                 let coords = extraireCoordonneesDecimales(b.gps);
@@ -1053,7 +1158,9 @@
                     `"${(loc.rue || '').replace(/"/g, '""').replace(/;/g, ',')}"`,
                     `"${(b.type || 'Maison')}"`,
                     `"${(b.surface || '—')}"`,
+                    `"${(b.terrain || '—')}"`,
                     `"${(b.pieces || '—')}"`,
+                    `"${(b.chambres || '—')}"`,
                     `"${prixNettoye}"`, 
                     `"${(b.statut || 'Inactifs')}"`,
                     `"${b.prospectionFaite ? 'Oui' : 'Non'}"`,
@@ -1200,42 +1307,7 @@
             });
         }
 
-        // Lancement du GPS en temps réel au chargement de l'application
         document.addEventListener('DOMContentLoaded', () => {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition((position) => {
-                    userCurrentPosition = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    
-                    if (mapInstance) {
-                        if (!userMarker) {
-                            let userIcon = L.divIcon({
-                                html: `<div style="background-color: #22c55e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(34,197,94,0.8); animation: pulseUser 1.5s infinite;"></div>`,
-                                className: '',
-                                iconSize: [16, 16],
-                                iconAnchor: [8, 8]
-                            });
-                            userMarker = L.marker([userCurrentPosition.lat, userCurrentPosition.lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(mapInstance).bindPopup("📍 Vous êtes ici");
-                        } else {
-                            userMarker.setLatLng([userCurrentPosition.lat, userCurrentPosition.lng]);
-                        }
-                    }
-
-                    let oldClosest = idBienLePlusProche;
-                    recalculerIdPlusProche();
-                    
-                    // On ne force le re-calcul visuel de la liste que si le bien le plus proche a changé
-                    if (oldClosest !== idBienLePlusProche) {
-                        renderApp(); 
-                    }
-                }, (error) => {
-                    console.warn("Erreur GPS ou géolocalisation ignorée :", error);
-                }, {
-                    enableHighAccuracy: true,
-                    maximumAge: 10000,
-                    timeout: 5000
-                });
-            }
-
             const statutsAssocies = ["Tous", "Actifs", "Inactifs", "Prospectés", "Mandats"];
             statutsAssocies.forEach(s => {
                 const el = document.getElementById(`card-filter-${s}`);
@@ -1259,15 +1331,19 @@
         triSelect.onchange = (e) => { triActuel = e.target.value; renderApp(); };
 
         function renderApp() {
-            recalculerIdPlusProche(); 
             renderCountersAndTabs();
             annoncesContainer.innerHTML = '';
             
+            // On filtre globalement la liste SELON TES CHOIX (budget, pieces, etc.)
             let bf = listeBiens.filter(b => validerFiltrageGlobalDuBien(b));
+
+            // On trouve le plus proche dans cette liste filtrée
+            let closestBien = trouverBienPlusProche(bf);
+            let closestBienId = closestBien ? closestBien.id : null;
 
             if (listeBiens.length > 0) {
                 initMap();
-                updateMapMarkers();
+                updateMapMarkers(closestBienId);
             }
 
             if (triActuel === "date-desc") { bf.sort((a, b) => b.id - a.id); } 
@@ -1281,9 +1357,36 @@
                 return;
             }
 
-            let htmlCards = [];
+            // GESTION DE L'ORDRE D'AFFICHAGE (LE PLUS PROCHE EN HAUT, PUIS LE SÉPARATEUR)
+            let bfToRender = [];
+            if (closestBienId) {
+                bfToRender.push({ bien: closestBien, isClosest: true });
+                let bfRest = bf.filter(b => b.id !== closestBienId);
+                if(bfRest.length > 0) {
+                    bfToRender.push({ separator: true });
+                    bfRest.forEach(b => bfToRender.push({ bien: b, isClosest: false }));
+                }
+            } else {
+                bf.forEach(b => bfToRender.push({ bien: b, isClosest: false }));
+            }
 
-            bf.forEach(bien => {
+            // CREATION DES CARTES DYNAMIQUEMENT
+            bfToRender.forEach(item => {
+                if (item.separator) {
+                    let separator = document.createElement('div');
+                    separator.className = "flex items-center justify-center gap-3 my-8 opacity-70";
+                    separator.innerHTML = `
+                        <div class="h-px bg-slate-300 flex-1"></div>
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">Suite de la liste</span>
+                        <div class="h-px bg-slate-300 flex-1"></div>
+                    `;
+                    annoncesContainer.appendChild(separator);
+                    return;
+                }
+
+                let bien = item.bien;
+                let isClosest = item.isClosest;
+
                 let bc = "bg-rose-50 text-rose-600 border border-rose-200";
                 if (bien.statut === "Mandats") bc = "bg-indigo-50 text-indigo-600 border border-indigo-200";
                 if (bien.statut === "Actifs") bc = "bg-emerald-50 text-emerald-600 border border-emerald-200";
@@ -1320,8 +1423,13 @@
                 
                 let borderAlerteClass = "border-gray-200 shadow-sm";
                 let badgeAlertePigeHTML = "";
+                let badgePlusProcheHTML = "";
                 
-                if (joursEcoules >= 30 && (bien.statut === "Actifs" || bien.prospectionFaite)) {
+                // AJOUT DES BORDURES ET BADGES DU PLUS PROCHE
+                if (isClosest) {
+                    borderAlerteClass = "border-sky-400 border-2 shadow-lg ring-4 ring-sky-50 scale-[1.01] transition-all";
+                    badgePlusProcheHTML = `<span class="bg-sky-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1 animate-pulse"><i data-lucide="car" class="w-3 h-3"></i> LE PLUS PROCHE</span>`;
+                } else if (joursEcoules >= 30 && (bien.statut === "Actifs" || bien.prospectionFaite)) {
                     borderAlerteClass = "border-amber-500 border-2 shadow-md";
                     badgeAlertePigeHTML = `<span class="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> RELANCE DE PIGE</span>`;
                 }
@@ -1341,13 +1449,16 @@
                     <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="cursor-pointer flex-1" onclick="toggleCollapse(${bien.id})">
                             <div class="flex items-center gap-2">
-                                <h3><span class="text-lg font-bold text-gray-800">${bien.nom}</span></h3>
+                                <h3 class="text-lg font-bold text-gray-800">${bien.nom}</h3>
+                                ${badgePlusProcheHTML}
                                 ${badgeAlertePigeHTML}
                             </div>
                             <div class="text-xs mt-1.5 flex flex-wrap gap-2 items-center">
                                 <span class="${classBadgeUnique}">${bien.dateAjout}</span>
                                 <span class="${classBadgeUnique}">${bien.surface} m²</span>
+                                <span class="${classBadgeUnique}">🌳 ${bien.terrain || '—'} m²</span>
                                 <span class="${classBadgeUnique}">${bien.pieces || '—'} pièces</span>
+                                <span class="${classBadgeUnique}">🛏️ ${bien.chambres || '—'} ch.</span>
                                 <span class="text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md font-extrabold flex flex-col text-left">
                                     <span>${bien.prix} €</span>
                                     <span class="text-[9px] text-slate-400 font-semibold tracking-tight -mt-0.5 block">${chainePrixMetreCarre} ${chaineAlerteMarche}</span>
@@ -1393,11 +1504,12 @@
                         </div>
                     </div>
                 `;
+                annoncesContainer.appendChild(card);
                 
                 if (coords && (!cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`] || cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`].rue === "Chargement...")) {
                     fetchLieuExactParGps(bien.gps).then(() => {
-                        let badgeVille = card.querySelector('.mt-1.5').children[4];
-                        let badgeRue = card.querySelector('.mt-1.5').children[5];
+                        let badgeVille = card.querySelector('.mt-1.5').children[7];
+                        let badgeRue = card.querySelector('.mt-1.5').children[8];
                         let infoGeo = cacheAdressesGps[`${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`];
                         if (badgeVille && badgeRue && infoGeo) {
                             badgeVille.innerText = `Ville : ${infoGeo.ville}`;
@@ -1405,41 +1517,7 @@
                         }
                     });
                 }
-
-                htmlCards.push({ bien: bien, element: card });
             });
-
-            // ROUTAGE VISUEL DU BIEN LE PLUS PROCHE
-            let closestItem = htmlCards.find(item => item.bien.id === idBienLePlusProche);
-            let otherItems = htmlCards.filter(item => item.bien.id !== idBienLePlusProche);
-
-            if (closestItem) {
-                closestItem.element.className = closestItem.element.className.replace(/border-gray-200|border-amber-500|border-2/g, ''); 
-                closestItem.element.classList.add('border-blue-500', 'border-2', 'shadow-md', 'bg-blue-50/20');
-                
-                let titleNode = closestItem.element.querySelector('h3');
-                if (titleNode && titleNode.parentNode) {
-                    titleNode.parentNode.innerHTML += `<span class="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1 animate-pulse"><i data-lucide="navigation" class="w-3 h-3"></i> LE PLUS PROCHE 🚙</span>`;
-                }
-                
-                annoncesContainer.appendChild(closestItem.element);
-                
-                if (otherItems.length > 0) {
-                    let separator = document.createElement('div');
-                    separator.className = "flex items-center gap-4 py-2 mt-3 mb-3 w-full";
-                    separator.innerHTML = `
-                        <div class="h-px bg-gray-300 flex-1"></div>
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Autres annonces de la liste</span>
-                        <div class="h-px bg-gray-300 flex-1"></div>
-                    `;
-                    annoncesContainer.appendChild(separator);
-                }
-            }
-
-            otherItems.forEach(item => {
-                annoncesContainer.appendChild(item.element);
-            });
-
             if (window.lucide) lucide.createIcons();
         }
 
